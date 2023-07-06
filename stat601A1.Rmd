@@ -1,0 +1,466 @@
+---
+title: "STAT 601.29: Bayesian Infectious Disease Modelling Assignment 1 Winter 2023"
+author: "Hao Nan Wang UCID: 30185958"
+date: "`r format(Sys.time(), '%Y-%m-%d')`"
+output:
+  pdf_document:
+    extra_dependencies:
+    - bbm
+    - xcolor
+    - bm
+    toc: yes
+  html_document:
+    df_print: paged
+    toc: yes
+  html_notebook:
+    toc: yes
+---
+
+\pagebreak
+
+# Question 1: SIR Model
+
+```{r}
+# Import the data and look at the first three rows
+q1cases = read.csv(file = 'Q1Cases.csv', header = TRUE)
+head(q1cases,3)
+```
+
+## i)
+
+```{r}
+# convert the new case data to prevalence data as the infectious period is two weeks long
+result = c()
+prev = function(arr,week){
+  for (i in 1:length(arr)) {
+  result[i] = sum(arr[i:(i+week-1)])
+  #print(result[i])
+  i = i+1
+  }
+  result = append(arr[1:week-1],na.omit(result))
+  return(result)
+}
+
+V1 = prev(q1cases$newcases,1)
+V2 = prev(q1cases$newcases,2)
+V3 = prev(q1cases$newcases,3)
+
+q1cases = as.data.frame(cbind(q1cases,V1,V2,V3))
+q1cases
+```
+
+## ii)
+
+In frequency-dependent model, there are some assumptions lead us to a set of three ordinary differential equations for $S_t$, $I_t$ and $R_t$:
+
+$$\frac{dS_t}{dt}=-\beta \frac{S_t I_t}{N}; \frac{dI_t}{dt}=\beta \frac{S_t I_t}{N}-\gamma I_t; \frac{dS_t}{dt}=\gamma I_t$$
+
+There is one unrecorded case who becomes infectious at the beginning of week 0, $S=N=12000$, and $I(0)=1,R(0)=0$, so that $\frac{dI}{dt}=\beta \frac{S I}{N}-\gamma I=(\beta-\gamma)I$
+
+Everyone should know that the general solution of ODE is $y=Ce^x$, and the question also gives $I(t=0)=1$ thus we could have 
+
+$$I(t)=Ce^{({\beta-\gamma})t}$$ where $C=1$
+
+Eventually, to estimate the transmision rate $\beta$, we have the objective function
+
+$$\text{min} \Sigma_{t}\bigr(e^{(\beta-\gamma)t}-\hat{I}(t)\bigr)^2$$
+
+
+```{r}
+library(deSolve)
+## SIR Function
+SIR = function(time, state, parameters){
+  with(as.list(c(state,parameters)),{
+    dS = (-beta*S*I)
+    dI = (beta*S*I)-(gamma*I)
+    dR = gamma*I
+    
+    return(list(c(dS,dI,dR)))
+  })
+}
+```
+
+```{r}
+## Define the residuals for the optimization
+residuals <- function(params, data) {
+  init <- c(S = 12000, I = 1, R = 0)
+  times <- seq(0, 12, by = 1)
+  out = ode(y = init,times = times, func = SIR, parms = params)
+  observed <- q1cases$V2
+  predicted <- out[, "I"]
+  return(sum((predicted - observed)^2))
+}
+```
+
+```{r, warning=FALSE}
+# define a range of possible beta values
+beta_start_values <- seq(0.00001, 0.0003, by = 0.000005)
+# Initialize a vector to store the residual results
+res = c()
+# Loop over the starting values for beta
+for (i in 1:length(beta_start_values)) {
+  # Define the starting values for beta and gamma
+  parameters <- c(beta = beta_start_values[i], gamma = 0.5)
+  res[i] = residuals(parameters, data = q1cases$V2)
+}
+
+# Find the index of the minimum residuals
+min_result_index <- which.min(res)
+min_result <- res[[min_result_index]]
+# Print the minimum residuals
+min_result
+# Plot the residuals under different values of beta
+plot(res)
+# Print the corresponding beta value
+beta = beta_start_values[[min_result_index]]
+beta
+```
+
+When infectious period is two weeks long, the corresponding transmission rate $\beta=0.000085$
+
+```{r}
+## plot the data
+init <- c(S = 12000, I = 1, R = 0)
+times <- seq(0, 12, by = 1)
+parameters = c(beta = beta, gamma = 1/2)
+out = ode(y = init,times = times, func = SIR, parms = parameters)
+out = as.data.frame(out)
+out$time = NULL
+head(out,3)
+matplot(x = times, y = out, type = "l", xlab = "Time", 
+        ylab = "Susceptible, Infectious and Removed", main = "SIR Model", lwd = 1, lty = 1, 
+        bty = "l", col = c(4,2,3))
+legend(7, 7000, c("Susceptible", "Infectious", "Removed"), pch = 1, col = c(4,2,3), bty = "n")
+```
+
+## iii)
+
+When infectious period is one week long
+
+```{r}
+## Define the residuals for the optimization
+residuals <- function(params, data) {
+  init <- c(S = 12000, I = 1, R = 0)
+  times <- seq(0, 12, by = 1)
+  out = ode(y = init,times = times, func = SIR, parms = params)
+  observed <- q1cases$V1
+  predicted <- out[, "I"]
+  return(sum((predicted - observed)^2))
+}
+```
+
+```{r, warning=FALSE}
+# define a range of possible beta values
+beta_start_values <- seq(0.00001, 0.0003, by = 0.000005)
+# Initialize a vector to store the residual results
+res = c()
+# Loop over the starting values for beta
+for (i in 1:length(beta_start_values)) {
+  # Define the starting values for beta and gamma
+  parameters <- c(beta = beta_start_values[i], gamma = 1)
+  res[i] = residuals(parameters, data = q1cases$V1)
+}
+
+# Find the index of the minimum residuals
+min_result_index <- which.min(res)
+min_result <- res[[min_result_index]]
+# Print the minimum residuals
+min_result
+# Plot the residuals under different values of beta
+plot(res)
+# Print the corresponding beta value
+beta = beta_start_values[[min_result_index]]
+beta
+```
+
+When infectious period is one week long, the corresponding transmission rate $\beta= 0.00012$
+
+```{r}
+## plot the data
+init <- c(S = 12000, I = 1, R = 0)
+times <- seq(0, 12, by = 1)
+parameters = c(beta = beta, gamma = 1)
+out = ode(y = init,times = times, func = SIR, parms = parameters)
+out = as.data.frame(out)
+out$time = NULL
+head(out,3)
+matplot(x = times, y = out, type = "l", xlab = "Time", 
+        ylab = "Susceptible, Infectious and Removed", main = "SIR Model", lwd = 1, lty = 1, 
+        bty = "l", col = c(4,2,3))
+legend(7, 7000, c("Susceptible", "Infectious", "Removed"), pch = 1, col = c(4,2,3), bty = "n")
+```
+
+
+When infectious period is three weeks long
+
+```{r}
+## Define the residuals for the optimization
+residuals <- function(params, data) {
+  init <- c(S = 12000, I = 1, R = 0)
+  times <- seq(0, 12, by = 1)
+  out = ode(y = init,times = times, func = SIR, parms = params)
+  observed <- q1cases$V3
+  predicted <- out[, "I"]
+  return(sum((predicted - observed)^2))
+}
+```
+
+```{r, warning=FALSE}
+# define a range of possible beta values
+beta_start_values <- seq(0.00001, 0.0003, by = 0.000005)
+# Initialize a vector to store the residual results
+res = c()
+# Loop over the starting values for beta
+for (i in 1:length(beta_start_values)) {
+  # Define the starting values for beta and gamma
+  parameters <- c(beta = beta_start_values[i], gamma = 1/3)
+  res[i] = residuals(parameters, data = q1cases$V3)
+}
+
+# Find the index of the minimum residuals
+min_result_index <- which.min(res)
+min_result <- res[[min_result_index]]
+# Print the minimum residuals
+min_result
+# Plot the residuals under different values of beta
+plot(res)
+# Print the corresponding beta value
+beta = beta_start_values[[min_result_index]]
+beta
+```
+
+When infectious period is one week long, the corresponding transmission rate $\beta= 0.00007$
+
+```{r}
+## plot the data
+init <- c(S = 12000, I = 1, R = 0)
+times <- seq(0, 12, by = 1)
+parameters = c(beta = beta, gamma = 1/3)
+out = ode(y = init,times = times, func = SIR, parms = parameters)
+out = as.data.frame(out)
+out$time = NULL
+head(out,3)
+matplot(x = times, y = out, type = "l", xlab = "Time", 
+        ylab = "Susceptible, Infectious and Removed", main = "SIR Model", lwd = 1, lty = 1, 
+        bty = "l", col = c(4,2,3))
+legend(7, 7000, c("Susceptible", "Infectious", "Removed"), pch = 1, col = c(4,2,3), bty = "n")
+```
+
+## iv
+
+From part ii) and iii), we determine $\xi = \Sigma_{t}\bigr(e^{(\beta-\gamma)t}-\hat{I}(t)\bigr)^2$, the sum of residual squared between the estimate and the real value. When infectious period is 1 week long, $\xi$ is 127848; When infectious period is 2 weeks long, $\xi$ is 357054; When infectious period is 3 weeks long, $\xi$ is 522853. Infectious period of one week produces the smallest $\xi$ among them, so I believe that the infectious period of one week is most likely correct; However, we still can see a huge $\xi$ over there. This method is not the optimal way to solve this particular question because it determines one parameter with the assumption of another parameter is fixed. So the region of parameter candidates is not correct / smaller than it should be, thus, it is hard to find the correct parameter. The correct way to determine a vector of parameters is to set their COMBINATION or use nested loop to try all possibilities. 
+
+\pagebreak
+
+# Question 2: SIR Model with Vaccination
+
+```{r}
+## we modify our SIR model, called SIRV, as now there are some susceptible are now 
+## being removed rather than being infected, via the vaccination program
+library(deSolve)
+## SIR Function
+SIRV = function(time, state, parameters){
+  with(as.list(c(state,parameters)),{
+    dS = (-beta*S*I) - V*S
+    dI = (beta*S*I)-(gamma*I)
+    dR = gamma*I + V*S
+    return(list(c(dS,dI,dR)))
+  })
+}
+## Initialization
+## at the beginning of week 13 obtain from ii)
+init = c(S=11104.88, I=440.107213, R=456.0110071)
+## define a range of possible v values
+v_start_values <- seq(0.01, 1, by = 0.01)
+## define an empty set to store v values that corresponding to the 10th week of vaccination
+v = c()
+## loop
+for (i in 1:length(v_start_values)) {
+  parameters = c(beta=8.5e-05, gamma=1/2, V=v_start_values[i])
+  times = seq(13,22,by=1)
+  ## Solve using ODE
+  v[i] = ode(y=init, times=times, func=SIRV, parms=parameters)[10,3]
+}
+v_start_values[Position(function(x) x < 20, v)]
+```
+
+At 10 weeks after the policy is introduced (Week 22), we test different $v$ values (from 0.01 to 1.00), we see when $v=0.63$, the number of infectious individual meets the bar/threshold of "under control" and starting $v=0.64$, the number of infectious individual is totally below 20. See the two graphs illustrated on next page.
+
+```{r}
+par(mfrow=c(1,2))
+plot(x=v_start_values, y=v, xlab = "possible v values", ylab = "# of individual at Week 22")
+abline(h=20, col="blue")
+plot(x=seq(0.55,0.70,by=0.01), y=v[55:70],xlab = "possible v values", 
+     ylab = "# of individual at Week 22")
+abline(h=20, col="blue")
+```
+
+\pagebreak
+
+# Question 3: Two Populations (Parasite and Host)
+
+Some important assumptions given in the question:
+
+1. The disease follows an SIR and an SI compartmental model for Human and Mosquito population,respectively.
+
+2. Mosquitoes can infect humans but not other mosquitoes; vice versa. Also the infection rates between the two species to differ.
+
+3. The infectious period for human is 10 time units and at time zero, we have $N_{h}(0)=1000$, $S_{h}(0)=999$ and $I_{h}(0)=1$ and $N_{m}(0)=S_{m}(0)=1000$
+
+4. Assume a density-dependent model
+
+5. Assume constant birthrate and constant death rate for human population, but these two rates are different
+
+6. Assume constant birthrate and constant death rate for mosquito population, but these two rates are different
+
+Assuming that the total human population size is N=1000, the total mosquito population size is M=1000, and the infectious period for humans is T=10, the equations for the population dynamics of the two species can be described as three ODE as follows:
+
+Human population dynamics:
+
+$$dS/dt = \nu (S+I+R) -\beta S I_m - \mu S$$
+$$dI/dt = \beta S I_m - \gamma I - \mu I$$
+$$dR/dt = \gamma I - \mu R$$
+
+Mosquito population dynamics:
+
+$$dS_m/dt = \phi (S_m+I_m) -\alpha S_m I - \psi S_m$$
+$$dI_m/dt = \alpha S_m I - \psi I$$
+
+where $\beta$ is the transmission rate from humans to mosquitoes, $\alpha$ is the transmission rate from mosquitoes to humans, $S$ is the number of susceptible humans, $I$ is the number of infected humans, $R$ is the number of recovered humans, $S_m$ is the number of susceptible mosquitoes, and $I_h$ is the number of infected humans. Also, $\nu$ is the birth rate and $\mu$ is the natural death rate for human and $\phi$ is the birth rate and $\psi$ is the natural death rate for mosquito .
+
+```{r, warning=FALSE}
+library(deSolve)
+## Define the ODE model
+ode_model <- function(t, y, parameters) {
+  with(as.list(c(y, parameters)), {
+    dS <- nu*(S+I+R) -beta * S * I_m - mu * S
+    dI <- beta * S * I_m - gamma * I - mu* I
+    dR <- gamma * I - mu * R
+    dS_m <- phi*(S+I+R) -alpha * S_m * I - psi * S_m
+    dI_m <- alpha * S_m * I - psi * I_m
+    return(list(c(dS, dI, dR, dS_m, dI_m)))
+  })
+}
+```
+
+## i)
+
+```{r}
+## Initialization
+initial_conditions <- c(S = 999, I = 1, R = 0, S_m = 1000, I_m = 0)
+parameters <- c(beta = 0.0003, alpha = 0.0009, N = 1000, M = 1000, gamma = 0.1, 
+                nu = 0.007, mu = 0.003, phi = 0.0002, psi = 0.0003)
+times <- seq(from = 0, to = 130, by = 1)
+
+# result in an equilibrium state with higher prevalence in mosquitoes
+out <- ode(y = initial_conditions, times = times, func = ode_model, parms = parameters)
+head(out,2)
+```
+
+```{r}
+## plot
+out = as.data.frame(out)
+out$time =NULL
+tail(out,2)
+matplot(x = times, y = out, type = "l", main = "beta=0.0003, alpha=0.0009, gamma=0.1, 
+        nu=0.007, mu=0.003, phi=0.0002, psi=0.0003", xlab = "Time", 
+        ylab = "Susceptible, Infectious and Removed", lwd = 2, lty = 2, 
+        bty = "l", col = c("blue", "red", "yellowgreen", "seagreen2", "black"))
+legend("topright", c("Human Susceptible", "Human Infectious", "Human Removed", 
+                  "Mosquito Susceptible", "Mosquito Infectious"), pch = 1, 
+       col = c("blue", "red", "yellowgreen", "seagreen2", "black"), bty = "n")
+abline(h=5, col="yellow2")
+abline(h=995, col="yellow2")
+```
+
+```{r}
+## Initialization
+initial_conditions <- c(S = 999, I = 1, R = 0, S_m = 1000, I_m = 0)
+parameters <- c(beta = 0.0001, alpha = 0.0007, N = 1000, M = 1000, gamma = 0.1, 
+                nu = 0.009, mu = 0.003, phi = 0.001, psi = 0.002)
+times <- seq(from = 0, to = 130, by = 1)
+
+# result in an equilibrium state with higher prevalence in mosquitoes
+out <- ode(y = initial_conditions, times = times, func = ode_model, parms = parameters)
+head(out,2)
+```
+
+```{r}
+## plot
+out = as.data.frame(out)
+out$time =NULL
+tail(out,2)
+matplot(x = times, y = out, type = "l", main = "beta=0.0001, alpha=0.0007, gamma=0.1, 
+        nu=0.009, mu=0.003, phi=0.0001, psi=0.0002", xlab = "Time", 
+        ylab = "Susceptible, Infectious and Removed", lwd = 2, lty = 2, 
+        bty = "l", col = c("blue", "red", "yellowgreen", "seagreen2", "black"))
+legend("topright", c("Human Susceptible", "Human Infectious", "Human Removed", 
+                  "Mosquito Susceptible", "Mosquito Infectious"), pch = 1, 
+       col = c("blue", "red", "yellowgreen", "seagreen2", "black"), bty = "n")
+abline(h=5, col="yellow2")
+abline(h=995, col="yellow2")
+```
+
+## ii)
+
+```{r}
+## Initialization
+initial_conditions <- c(S = 999, I = 1, R = 0, S_m = 1000, I_m = 0)
+parameters <- c(beta = 0.0007, alpha = 0.0003, N = 1000, M = 1000, gamma = 0.1, 
+                nu = 0.007, mu = 0.0003, phi = 0.002, psi = 0.05)
+times <- seq(from = 0, to = 130, by = 1)
+
+# result in an equilibrium state with higher prevalence in mosquitoes
+out <- ode(y = initial_conditions, times = times, func = ode_model, parms = parameters)
+head(out,2)
+```
+
+```{r}
+## plot
+out = as.data.frame(out)
+out$time =NULL
+tail(out,2)
+matplot(x = times, y = out, type = "l", main = "beta=0.0007, alpha=0.0003, gamma=0.1, 
+        nu=0.007, mu=0.0003, phi=0.002, psi=0.05", xlab = "Time", 
+        ylab = "Susceptible, Infectious and Removed", lwd = 2, lty = 2, 
+        bty = "l", col = c("blue", "red", "yellowgreen", "seagreen2", "black"))
+legend("topright", c("Human Susceptible", "Human Infectious", "Human Removed", 
+                  "Mosquito Susceptible", "Mosquito Infectious"), pch = 1, 
+       col = c("blue", "red", "yellowgreen", "seagreen2", "black"), bty = "n")
+abline(h=5, col="yellow2")
+abline(h=995, col="yellow2")
+```
+
+```{r}
+## Initialization
+initial_conditions <- c(S = 999, I = 1, R = 0, S_m = 1000, I_m = 0)
+parameters <- c(beta = 0.0007, alpha = 0.0025, N = 1000, M = 1000, gamma = 0.1, 
+                nu = 0.008, mu = 0.007, phi = 0.001, psi = 0.05)
+times <- seq(from = 0, to = 130, by = 1)
+
+# result in an equilibrium state with higher prevalence in mosquitoes
+out <- ode(y = initial_conditions, times = times, func = ode_model, parms = parameters)
+head(out,2)
+```
+
+```{r}
+## plot
+out = as.data.frame(out)
+out$time =NULL
+tail(out,2)
+matplot(x = times, y = out, type = "l", main = "beta=0.0007, alpha=0.0025, gamma=0.1, 
+        nu=0.008, mu=0.007, phi=0.001, psi=0.05", xlab = "Time", 
+        ylab = "Susceptible, Infectious and Removed", lwd = 2, lty = 2, 
+        bty = "l", col = c("blue", "red", "yellowgreen", "seagreen2", "black"))
+legend("topright", c("Human Susceptible", "Human Infectious", "Human Removed", 
+                  "Mosquito Susceptible", "Mosquito Infectious"), pch = 1, 
+       col = c("blue", "red", "yellowgreen", "seagreen2", "black"), bty = "n")
+abline(h=5, col="yellow2")
+abline(h=995, col="yellow2")
+```
+
+We present two plots for each case, which demonstrate the relationship among the number of susceptible, the number of infected and removed individuals. The intersection of the infected and removed curves in the plot represents the equilibrium state, where the rate of new infections is equal to the rate of recoveries. The growth or decline of the infected population is dependent on the relative size of the birth rate, natural death rate, transmission rate, and removal rate. For example, a larger birth rate compared to the natural death rate leads to a larger susceptible population, which could result in a larger outbreak. A higher transmission rate compared to the removal rate results in a larger infected population, whereas a higher removal rate compared to the transmission rate leads to a smaller outbreak.
+
+The relative heights of the red and black lines in the SIR plot are a result of the interplay between the transmission rate between humans and mosquitoes, as well as the birth rate and natural death rate of both human and mosquito populations. If the transmission rate from humans to mosquitoes is greater, the number of infectious mosquitoes increases and the black line rises. Conversely, if the transmission rate from mosquitoes to humans is higher, the number of infectious humans increases and the red line rises. Similarly, a higher birth rate for humans or mosquitoes leads to a corresponding increase in the number of infectious individuals of that species. The removal rate also plays a role in determining the height of the red and black lines. A higher removal rate for humans or mosquitoes results in a quicker decline in the number of infectious individuals of that species. But in this case, the removal rate is fixed at 0.1.
+
+In conclusion, the specific combination of the birth rate, natural death rate, transmission rate, and removal rate determines the trajectory of the epidemic and the relative heights of the red and black lines in the SIR plot.

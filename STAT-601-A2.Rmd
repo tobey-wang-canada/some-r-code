@@ -1,0 +1,668 @@
+---
+title: "stat 601 A2"
+output: pdf_document
+date: "`r Sys.Date()`"
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+# Question 1: Bayesian Linear Regression
+
+## i)
+
+```{r}
+data = read.csv("VaccineUptake.csv", header = TRUE)
+head(data,3)
+model1 = lm(Incidence~Coverage, data = data)
+summary(model1)
+```
+
+__NIMBLE model syntax__
+
+```{r, warning=FALSE}
+library(nimble)
+n = nrow(data)
+b0_true = 134.4630
+b1_true = -1.9025
+sigma_true = 12.07
+x = data$Coverage
+y = data$Incidence
+
+lmCode = nimbleCode({
+  # likelihood
+  for(i in 1:n){
+    mu[i] <- b0 + b1*x[i]
+    y[i]~dnorm(mu[i], sd=sigma)
+  }
+  
+  # priors
+  b0~dunif(-800,800)
+  b1~dunif(-800,800)
+  sigma~dunif(0,500)
+  
+})
+```
+
+__Sampling from the posterior using the default MCMC algorithm__
+
+```{r}
+dataList = list(y = y)
+constantsList = list(n=n, x=x)
+initsList = list(b0=130, b1=-3, sigma =12)
+# create nimble model object
+output = nimbleMCMC(lmCode, data = dataList,
+                            constants = constantsList,
+                            inits = initsList,
+                            niter = 30000, summary = TRUE, nburnin = 2000, thin = 3)
+
+```
+
+```{r}
+output$summary
+plot(output$samples[,'b0'], type = "l", xlim = c(0,10000), ylab = "beta0")
+abline(h=b0_true, col = "red")
+plot(output$samples[,'b1'], type = "l", xlim = c(0,10000), ylab = "beta1")
+abline(h=b1_true, col = "red")
+plot(output$samples[,'sigma'], type = "l", xlim = c(0,10000), ylab = "sigma")
+abline(h=sigma_true, col = "red")
+
+plot(output$samples[,'b0'], output$samples[,'b1'], main = "correlation between beta0 and beta1",
+     xlab = "beta0", ylab = "beta1", pch = 19)
+```
+
+## ii)
+
+```{r}
+lmModel <- nimbleModel(lmCode, data = dataList,
+                            constants = constantsList,
+                            inits = initsList)
+model1MCMCconfiguration <- configureMCMC(lmModel)
+
+```
+
+```{r}
+# model1MCMCconfiguration$printSamplers()
+model1MCMCconfiguration$removeSamplers('b0')
+model1MCMCconfiguration$addSampler(target = 'b0', type = 'RW_block')
+model1MCMCconfiguration$removeSamplers('b1')
+model1MCMCconfiguration$addSampler(target = 'b1', type = 'RW_block')
+# configureMCMC(model1)
+lmMCMC = buildMCMC(model1MCMCconfiguration)
+lmCompiled = compileNimble(lmModel, lmMCMC)
+samples = runMCMC(lmCompiled$lmMCMC, niter = 30000, nburnin = 2000, summary = TRUE, thin = 3)
+```
+
+```{r}
+samples$summary
+plot(samples$samples[,'b0'], type = "l")
+abline(h=b0_true, col = "red")
+plot(samples$samples[,'b1'], type = "l")
+abline(h=b1_true, col = "red")
+plot(samples$samples[,'sigma'], type = "l")
+abline(h=sigma_true, col = "red")
+
+plot(samples$samples[,'b0'], samples$samples[,'b1'], main = "correlation between beta0 and beta1",
+     xlab = "beta0", ylab = "beta1", pch = 19)
+```
+
+
+
+__The default MH proposals (samplers) being used in part i) updates one parameter at a time and it moves orthogonality; on the other hand, the RW block sampler being used in part ii) updates both parameters in one step, so it can move in any direction in the parameter space, which is more efficient for correlated variables as illustrated on the scatter plot between $\beta_0$ and $\beta_1$__
+
+## iii)
+
+```{r, message=FALSE, warning=FALSE}
+# create nimble model object
+output = nimbleMCMC(lmCode, data = dataList,
+                            constants = constantsList,
+                            inits = initsList, nchains = 20,
+                            niter = 30000, summary = TRUE)
+output$summary$chain20
+output$summary$all.chains
+```
+
+\pagebreak
+
+# Question 2: Bayesian SIR Model
+
+## part i)
+
+```{r}
+library(nimble)
+data = read.csv("A2Epidemic1.csv", header = TRUE)
+head(data)
+# create Istar and Rstar
+new_cases <- data$NewCases
+new_removals <- data$NewRemovals
+```
+
+```{r}
+SIR_code <- nimbleCode({
+  S[1] <- N - I0 - R0
+  I[1] <- I0
+  R[1] <- R0
+  probIR <- 1 - exp(-gamma)
+  ### loop over time
+  for(t in 1:tau) {
+    probSI[t] <- 1 - exp(- beta * I[t] / N)
+    Istar[t] ~ dbin(probSI[t], S[t])
+    Rstar[t] ~ dbin(probIR, I[t])
+    # update S, I, R
+    S[t + 1] <- S[t] - Istar[t]
+    I[t + 1] <- I[t] + Istar[t] - Rstar[t]
+    R[t + 1] <- R[t] + Rstar[t]
+}
+# priors
+beta ~ dunif(0,10)
+gamma ~ dunif(0,10)
+})
+```
+
+```{r}
+constantsList <- list(N = 1000, I0 = 5, R0 = 0, tau = 17)
+dataList <- list(Istar = new_cases, Rstar = new_removals)
+sirModel <- nimbleModel(SIR_code, constants = constantsList, data = dataList)
+initisList = list(beta = runif(1,0,1), gamma = runif(1,0,10))
+sirModel$setInits(initisList)
+# exclude data from parent nodes
+dataNodes <- c('Istar', 'Rstar')
+dataNodes <- sirModel$expandNodeNames(dataNodes, returnScalarComponents = TRUE)
+parentNodes <- sirModel$getParents(dataNodes, stochOnly = TRUE)
+parentNodes <- parentNodes[-which(parentNodes %in% dataNodes)]
+# parentNodes # beta gamma
+parentNodes <- sirModel$expandNodeNames(parentNodes, returnScalarComponents = TRUE)
+nodesToSim <- sirModel$getDependencies(parentNodes, self = FALSE, downstream = T)
+
+## for part iii)
+part_i_S = sirModel$S
+part_i_I = sirModel$I
+part_i_R = sirModel$R
+```
+
+```{r}
+mcmc <- nimbleMCMC(sirModel, nodesToSim, summary = TRUE, 
+                   nchains = 1, thin = 1, niter = 20000, nburnin = 4000)
+# summarize results
+mcmc$summary
+par(mfrow = c(1,2))
+plot(mcmc$samples[, 'beta'], type = "l")
+abline(h=mean(mcmc$samples[,'beta']), col = "red")
+plot(mcmc$samples[, 'gamma'], type = "l")
+abline(h=mean(mcmc$samples[,'gamma']), col = "red")
+
+# Compute posterior correlation
+df = data.frame(beta = mcmc$samples[,1], gamma = mcmc$samples[,2])
+cor(df)
+
+# Plot
+plot(mcmc$samples[, 'beta'], mcmc$samples[, 'gamma'], xlab = 'beta', ylab = 'gamma', 
+     pch = 19, main = "Posterior of Gamma and Beta")
+```
+
+## part ii)
+
+```{r}
+SIR_code <- nimbleCode({
+  S[1] <- N - I0 - R0
+  I[1] <- I0
+  R[1] <- R0
+  probIR <- 1 - exp(-gamma)
+  ### loop over time
+  for(t in 1:tau) {
+    probSI[t] <- 1 - exp(- beta * I[t] / N)
+    Istar[t] ~ dbin(probSI[t], S[t])
+    Rstar[t] ~ dbin(probIR, I[t])
+    # update S, I, R
+    S[t + 1] <- S[t] - Istar[t]
+    I[t + 1] <- I[t] + Istar[t] - Rstar[t]
+    R[t + 1] <- R[t] + Rstar[t]
+}
+# priors
+beta ~ dexp(100)
+gamma ~ dunif(0,10)
+})
+```
+
+```{r}
+constantsList <- list(N = 1000, I0 = 5, R0 = 0, tau = 17)
+dataList <- list(Istar = new_cases, Rstar = new_removals)
+sirModel <- nimbleModel(SIR_code, constants = constantsList, data = dataList)
+initisList = list(beta = runif(1,0,1), gamma = runif(1,0,10))
+sirModel$setInits(initisList)
+# exclude data from parent nodes
+dataNodes <- c('Istar', 'Rstar')
+dataNodes <- sirModel$expandNodeNames(dataNodes, returnScalarComponents = TRUE)
+dataNodes
+parentNodes <- sirModel$getParents(dataNodes, stochOnly = TRUE)
+parentNodes
+parentNodes <- parentNodes[-which(parentNodes %in% dataNodes)]
+parentNodes
+# parentNodes # beta gamma
+parentNodes <- sirModel$expandNodeNames(parentNodes, returnScalarComponents = TRUE)
+nodesToSim <- sirModel$getDependencies(parentNodes, self = FALSE, downstream = T)
+nodesToSim
+```
+
+```{r}
+mcmc2 <- nimbleMCMC(sirModel, nodesToSim, summary = TRUE, 
+                   nchains = 1, thin = 1, niter = 20000, nburnin = 4000)
+# summarize results
+mcmc2$summary
+par(mfrow = c(1,2))
+plot(mcmc2$samples[, 'beta'], type = "l")
+abline(h=mean(mcmc2$samples[,'beta']), col = "red")
+plot(mcmc2$samples[, 'gamma'], type = "l")
+abline(h=mean(mcmc2$samples[,'gamma']), col = "red")
+```
+
+__As we can observe, the $\gamma$ posterior estimate has no noticeable change due to the change of prior of $\beta$, I think this makes sense because $\gamma$ and $\beta$ have no correlation as their scatter plot is a circle-like shape, not a line.__
+
+## part iii)
+
+### Under the posterior mean
+
+```{r}
+library(nimble)
+data = read.csv("A2Epidemic1.csv", header = TRUE)
+# head(data)
+# create Istar and Rstar
+new_cases <- data$NewCases
+new_removals <- data$NewRemovals
+
+SIR_code <- nimbleCode({
+S[1] <- N - I17 - R17
+I[1] <- I17
+R[1] <- R17
+
+probIR <- 1 - exp(-gamma)
+### loop over time
+for(t in 1:tau) {
+  probSI[t] <- 1 - exp(- beta * I[t] / N)
+  Istar[t] ~ dbin(probSI[t], S[t])
+  Rstar[t] ~ dbin(probIR, I[t])
+  # update S, I, R
+  S[t + 1] <- S[t] - Istar[t]
+  I[t + 1] <- I[t] + Istar[t] - Rstar[t]
+  R[t + 1] <- R[t] + Rstar[t]
+}
+# priors
+## beta_posterior_mean 0.3850350
+beta ~ dnorm(0.3850350, 1e-3)
+## gamma_posteror_mean 0.2654375
+gamma ~ dnorm(0.2654375, 1e-3)
+})
+```
+
+```{r}
+constantsList <- list(N=1000, I17=32, R17=46, tau=4)
+initialList <- list(beta = 0.3850350, gamma = 0.2654375)
+
+sirModel <- nimbleModel(SIR_code, constants = constantsList, inits = initialList)
+dataNodes <- c('Istar', 'Rstar')
+
+# exclude data from parent nodes
+dataNodes <- c('Istar', 'Rstar')
+dataNodes <- sirModel$expandNodeNames(dataNodes, returnScalarComponents = TRUE)
+parentNodes <- sirModel$getParents(dataNodes, stochOnly = TRUE)
+parentNodes
+parentNodes <- parentNodes[-which(parentNodes %in% dataNodes)]
+parentNodes
+# parentNodes # beta gamma
+parentNodes <- sirModel$expandNodeNames(parentNodes, returnScalarComponents = TRUE)
+parentNodes
+nodesToSim <- sirModel$getDependencies(parentNodes, self = FALSE, downstream = T)
+nodesToSim
+```
+
+```{r}
+# mcmc <- nimbleMCMC(sirModel, parentNodes, summary = TRUE, nchains = 1, thin = 1, 
+#                   niter = 1000, nburnin = 100)
+```
+
+```{r}
+# mcmc$summary
+```
+
+```{r}
+nSim <- 100
+# Create storage for epidemic curve simulations
+epiCurve <- matrix(NA, nrow = 21, ncol = nSim)
+
+# Loop over simulations
+for (i in 1:nSim) {
+  
+  sirModel$simulate(nodesToSim, includeData = TRUE)
+  epiCurve[,i] <- c(new_cases, sirModel$Istar[1:4])
+}
+
+plot(epiCurve[,1], type = 'l', col = adjustcolor('black',alpha = 0.3), ylim = c(0, 30))
+for (i in 2:nSim) {
+  lines(epiCurve[,i], col = adjustcolor('black', alpha = 0.3))
+}
+```
+
+### From the posterior predictive distribution
+
+```{r}
+set.seed(120)
+# sample() is a versatile function in R that can be used to randomly sample elements 
+# from a vector or set of values. replace = FALSE indicates sample without replacement
+
+my_vec <- c(1:10000)
+# sample 100 values randomly from my_vec
+Random <- as.array(sample(my_vec, 100, replace = FALSE))
+
+nSim <- 100
+# Create storage for epidemic curve simulations
+epiCurve <- matrix(NA, nrow = 21, ncol = nSim)
+
+# Loop over simulations
+for (i in 1:nSim) {
+  initialList <- list(beta=mcmc$samples[Random[i], 'beta'], 
+                      gamma=mcmc$samples[Random[i], 'gamma'])
+  sirModel$setInits(initisList)
+  
+  sirModel$simulate(nodesToSim, includeData = TRUE)
+  epiCurve[,i] <- c(new_cases, sirModel$Istar[1:4])
+}
+
+plot(epiCurve[,1], type = 'l', col = adjustcolor('black',alpha = 0.3), ylim = c(0, 30))
+for (i in 2:nSim) {
+  lines(epiCurve[,i], col = adjustcolor('black', alpha = 0.3))
+}
+```
+
+__From these two plots, I find that the discrepancy/difference between forecasts under the full posterior distribution seems to be larger than the difference between forecasts under the posterior mean. This is because we set a fixed value for posterior mean forecasting, i.e., the prior is fixed; however, for full posterior distribution, we have pooled 100 samples from the 10000 samples of beta and gamma, which add more randomness to the forecast. So we can observe a larger discrepancy under the full posterior distribution.__
+
+\pagebreak
+
+## part iv)
+
+```{r}
+my_vec <- c(1:10000)
+# sample 100 values randomly from my_vec
+Random <- as.array(sample(my_vec, 100, replace = FALSE))
+
+nSim <- 100
+# Create storage for epidemic curve simulations
+infectious <- matrix(NA, nrow = 90, ncol = nSim)
+```
+
+
+```{r}
+SIR_code <- nimbleCode({
+  S[1] <- N - I17 - R17
+  I[1] <- I17
+  R[1] <- R17
+  probIR <- 1 - exp(-gamma)
+  ### loop over time
+  for(t in 1:tau) {
+    probSI[t] <- 1 - exp(- beta * I[t] / N)
+    Istar[t] ~ dbin(probSI[t], S[t])
+    Rstar[t] ~ dbin(probIR, I[t])
+    # update S, I, R
+    S[t + 1] <- S[t] - Istar[t]
+    I[t + 1] <- I[t] + Istar[t] - Rstar[t]
+    R[t + 1] <- R[t] + Rstar[t]
+}
+# priors
+beta ~ dunif(0,10)
+gamma ~ dunif(0,10)
+})
+```
+
+```{r}
+constantsList <- list(N=1000, I17=32, R17=46, tau=75)
+
+sirModel <- nimbleModel(SIR_code, constants = constantsList)
+initisList = list(beta = runif(1,0,1), gamma = runif(1,0,10))
+sirModel$setInits(initisList)
+
+dataNodes <- c('Istar', 'Rstar')
+
+# exclude data from parent nodes
+dataNodes <- c('Istar', 'Rstar')
+dataNodes <- sirModel$expandNodeNames(dataNodes, returnScalarComponents = TRUE)
+parentNodes <- sirModel$getParents(dataNodes, stochOnly = TRUE)
+parentNodes <- parentNodes[-which(parentNodes %in% dataNodes)]
+# parentNodes # beta gamma
+parentNodes <- sirModel$expandNodeNames(parentNodes, returnScalarComponents = TRUE)
+nodesToSim <- sirModel$getDependencies(parentNodes, self = FALSE, downstream = T)
+
+# Loop over simulations
+for (i in 1:nSim) {
+  initialList <- list(beta=mcmc$samples[Random[i], 'beta'], 
+                      gamma=mcmc$samples[Random[i], 'gamma'])
+  sirModel$setInits(initialList)
+  
+  sirModel$simulate(nodesToSim, includeData = TRUE)
+  infectious[,i] <- c(part_i_I, sirModel$I[1:72])
+}
+```
+
+```{r}
+dataList <- list(Istar = sirModel$Istar, Rstar = sirModel$Rstar)
+constantsList <- list(N=1000, I17=32, R17=46, tau=75)
+sirModel <- nimbleModel(SIR_code, constants = constantsList, data = dataList)
+
+mcmc.iv <- nimbleMCMC(sirModel, nodesToSim, summary = TRUE, nchains = 1, thin = 1, 
+                   niter = 2000, nburnin = 100)
+mcmc.iv$summary
+```
+
+```{r}
+plot(infectious[,1], type = 'l', col = adjustcolor('black',alpha = 0.3), ylim = c(0, 280),
+     xlab = "simulating from t = 18", ylab = "number of infectious individuals")
+for (i in 2:nSim) {
+  lines(infectious[,i], col = adjustcolor('black', alpha = 0.3))
+}
+time.of.peak = apply(infectious, 1, max)
+```
+
+```{r}
+# Calculate the posterior mean of time.of.peak
+posterior_mean <- mean(time.of.peak)
+
+# Calculate the 95% credible interval of peak.sim
+credible_interval <- quantile(time.of.peak, c(0.025, 0.975))
+
+# Print the results
+cat("Posterior mean of time of the epidemic peak:", posterior_mean, "\n")
+cat("95% credible interval of time of the epidemic peak:", 
+    "(", credible_interval[1], ",",credible_interval[2], ")", "\n")
+```
+
+\pagebreak
+
+# Question 3: Bayesian SIR Model with Behavioural-change
+
+## part a)
+
+```{r}
+library(nimble)
+dataset = read.csv("A2Epidemic2.csv")
+head(dataset)
+```
+
+```{r}
+# create Istar and Rstar
+new_cases <- dataset$NewCases
+new_removals <- dataset$NewRemovals
+```
+
+```{r}
+SIR_code <- nimbleCode({
+  S[1] <- N - I0 - R0
+  I[1] <- I0
+  R[1] <- R0
+  probIR <- 1 - exp(-gamma)
+  ### loop over time
+  for(t in 1:tau) {
+    probSI[t] <- 1 - exp(- beta * I[t] / N)
+    Istar[t] ~ dbin(probSI[t], S[t])
+    Rstar[t] ~ dbin(probIR, I[t])
+    # update S, I, R
+    S[t + 1] <- S[t] - Istar[t]
+    I[t + 1] <- I[t] + Istar[t] - Rstar[t]
+    R[t + 1] <- R[t] + Rstar[t]
+}
+# priors
+beta ~ dunif(0,10)
+gamma ~ dunif(0,10)
+})
+```
+
+```{r}
+constantsList <- list(N = 1000, I0 = 5, R0 = 0, tau = 100)
+dataList <- list(Istar = new_cases, Rstar = new_removals)
+sirModel <- nimbleModel(SIR_code, constants = constantsList, data = dataList)
+initisList = list(beta = runif(1,0,1), gamma = runif(1,0,10))
+sirModel$setInits(initisList)
+# exclude data from parent nodes
+dataNodes <- c('Istar', 'Rstar')
+dataNodes <- sirModel$expandNodeNames(dataNodes, returnScalarComponents = TRUE)
+parentNodes <- sirModel$getParents(dataNodes, stochOnly = TRUE)
+parentNodes <- parentNodes[-which(parentNodes %in% dataNodes)]
+# parentNodes # beta gamma
+parentNodes <- sirModel$expandNodeNames(parentNodes, returnScalarComponents = TRUE)
+nodesToSim <- sirModel$getDependencies(parentNodes, self = FALSE, downstream = T)
+```
+
+```{r}
+mcmc <- nimbleMCMC(sirModel, nodesToSim, summary = TRUE, 
+                   nchains = 1, thin = 1, niter = 20000, nburnin = 4000)
+# summarize results
+mcmc$summary
+par(mfrow = c(1,2))
+plot(mcmc$samples[, 'beta'], type = "l")
+abline(h=mean(mcmc$samples[,'beta']), col = "red")
+plot(mcmc$samples[, 'gamma'], type = "l")
+abline(h=mean(mcmc$samples[,'gamma']), col = "red")
+```
+
+## part ii)
+
+```{r}
+my_vec <- c(1:10000)
+# sample 100 values randomly from my_vec
+Random <- as.array(sample(my_vec, 100, replace = FALSE))
+
+nSim <- 100
+# Create storage for epidemic curve simulations
+incidence <- matrix(NA, nrow = 100, ncol = nSim)
+
+# Loop over simulations
+for (i in 1:nSim) {
+  initialList <- list(beta=mcmc$samples[Random[i], 'beta'], 
+                      gamma=mcmc$samples[Random[i], 'gamma'])
+  sirModel$setInits(initialList)
+  
+  sirModel$simulate(nodesToSim, includeData = TRUE)
+  incidence[,i] <- sirModel$Istar
+}
+```
+
+```{r}
+plot(incidence[,1], type = 'l', col = adjustcolor('black',alpha = 0.3), ylim = c(0, 30),
+     xlab = "simulating from t = 1", ylab = "number of incidence")
+for (i in 2:nSim) {
+  lines(incidence[,i], col = adjustcolor('black', alpha = 0.3))
+}
+lines(new_cases, col = "red", lwd = 3)
+legend('topright', legend = c("simulation", "real"), col = c("black", "red"), lty = 1:2)
+```
+
+\pagebreak
+
+## part iii)
+
+__of course, we need to change our model / nimbleCode()__
+
+```{r}
+SIR_code <- nimbleCode({
+S[1] <- N - I0 - R0
+I[1] <- I0
+R[1] <- R0
+probIR <- 1 - exp(-gamma)
+### loop over time
+for(t in 1:tau) {
+A[t] <- delta1*(1-exp(-delta2*I[t]))
+probSI[t] <- 1 - exp(- beta * (1-A[t]) * I[t] / N)
+Istar[t] ~ dbin(probSI[t], S[t])
+Rstar[t] ~ dbin(probIR, I[t])
+# update S, I, R
+S[t + 1] <- S[t] - Istar[t]
+I[t + 1] <- I[t] + Istar[t] - Rstar[t]
+R[t + 1] <- R[t] + Rstar[t]
+}
+# priors
+beta ~ dunif(0,10)
+gamma ~ dunif(0,10)
+delta1 ~ dunif(0,1)
+delta2 ~ dunif(0,1)
+})
+```
+
+\pagebreak
+
+## part iv)
+
+```{r}
+constantsList <- list(N = 1000, I0 = 5, R0 = 0, tau = 100)
+dataList <- list(Istar = new_cases, Rstar = new_removals)
+sirModel <- nimbleModel(SIR_code, constants = constantsList, data = dataList)
+initisList = list(beta = runif(1,0,10), gamma = runif(1,0,10), 
+                  delta1 = runif(1,0,1), delta2 = runif(1,0,1))
+sirModel$setInits(initisList)
+```
+
+```{r}
+dataNodes <- c('Istar', 'Rstar', 'A')
+dataNodes <- sirModel$expandNodeNames(dataNodes, returnScalarComponents = TRUE)
+parentNodes <- sirModel$getParents(dataNodes, stochOnly = TRUE)
+parentNodes <- parentNodes[-which(parentNodes %in% dataNodes)]
+parentNodes <- sirModel$expandNodeNames(parentNodes, returnScalarComponents = TRUE)
+parentNodes # # beta gamma delta1 delta2
+nodesToSim <- sirModel$getDependencies(parentNodes, self = FALSE, downstream = T)
+```
+
+```{r}
+mcmc <- nimbleMCMC(sirModel, nodesToSim, summary = TRUE, 
+                   nchains = 1, thin = 1, niter = 20000, nburnin = 4000)
+```
+
+```{r}
+my_vec <- c(1:10000)
+# sample 100 values randomly from my_vec
+Random <- as.array(sample(my_vec, 100, replace = FALSE))
+
+nSim <- 100
+# Create storage for epidemic curve simulations
+incidence <- matrix(NA, nrow = 100, ncol = nSim)
+
+# Loop over simulations
+for (i in 1:nSim) {
+  initialList <- list(beta=mcmc$samples[Random[i], 'beta'], 
+                      gamma=mcmc$samples[Random[i], 'gamma'],
+                      delta1=mcmc$samples[Random[i], 'delta1'],
+                      delta2=mcmc$samples[Random[i], 'delta2'])
+  sirModel$setInits(initialList)
+  
+  sirModel$simulate(nodesToSim, includeData = TRUE)
+  incidence[,i] <- sirModel$Istar
+}
+```
+
+```{r}
+plot(incidence[,1], type = 'l', col = adjustcolor('black',alpha = 0.3), ylim = c(0, 15),
+     xlab = "simulating from t = 1", ylab = "number of incidence")
+for (i in 2:nSim) {
+  lines(incidence[,i], col = adjustcolor('black', alpha = 0.3))
+}
+lines(new_cases, col = "red", lwd = 3)
+legend('topright', legend = c("simulation", "real"), col = c("black", "red"), lty = 1:2)
+```
+
+__What I found is that without the implementation of behavioral change, the number of incidence is going to surge. So behavior change is important to be considered to control the spread of disease__
