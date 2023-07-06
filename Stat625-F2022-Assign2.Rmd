@@ -1,0 +1,192 @@
+---
+title: "STAT 625 F2022 Assignment 2 - Due on Dec. 9, Friday, 2022, 11:59pm"
+date: "`r format(Sys.time(), '%Y-%m-%d')`"
+output:
+  pdf_document:
+    extra_dependencies:
+    - bbm
+    - xcolor
+    - bm
+    toc: yes
+  html_document:
+    df_print: paged
+    toc: yes
+  html_notebook:
+    toc: yes
+---
+
+<!--
+Note: One can use the Rmd file as a template to generate pdf for an assignment; but ignore the commented parts included in blocks denoted by 
+<!-- **** -->.
+
+<!--
+# Note: html does not show the marks, but pdf does.
+-->
+
+\pagebreak
+<!--
+Note: If Monte-Carlo methods are used, every one may get slightly different results due to use of different random seeds.
+-->
+
+<!--
+\textcolor{red}{[Total 66 marks]}
+-->
+
+<!-- R Markdown can knit the following two tables (one in R Markdown format and one in Latex format) to pdf,  but can only knit the R Markdown format to notebook nb.html. So if you want to keep the Table in both pdf and nb.html, I would suggest you to use the R Markdown format.
+To add a caption, the syntax is Table: followed by your caption; Pandocs numbers automatically. Leave one line blank between the end of the table and the caption line.
+-->
+
+<!--
+| Johnson Family | Transformation | Parameter Conditions | X Condition |
+|----------------|-----------------------------------------------------------------------|---------------------------------------------------------|-------------------------------------|
+| $S_B$ | $Z = \gamma + \eta \ ln(\frac {X - \epsilon} {\lambda + \epsilon - X})$ | $\eta, \lambda >0, -\infty < \gamma, \epsilon < \infty$ | $\epsilon < X < \epsilon + \lambda$ |
+| $S_L$ | $Z = \gamma + \eta \ ln(X - \epsilon)$ | $\eta >0, -\infty < \gamma, \epsilon < \infty$ | $X > \epsilon$ |
+| $S_U$ | $Z = \gamma + \eta \sinh^{-1}(\frac {X - \epsilon} {\lambda})$ | $\eta, \lambda >0, -\infty < \gamma, \epsilon < \infty$ | $-\infty < X < \infty$ |
+
+Table: Transformations Associated with the Johnson System
+
+\begin{table}[h]
+\centering
+\caption{Transformations Associated with the Johnson System}
+\begin{tabular}{|l|l|l|l|}
+\hline
+Johnson Family & Transformation & Parameter Conditions & X Condition \\ \hline
+$S_B$ & $Z=\gamma + \eta ln(\frac {X - \epsilon} {\lambda + \epsilon - X})$ & $\eta, \lambda >0, -\infty < \gamma, \epsilon < \infty$ & $\epsilon < X < \epsilon + \lambda$ \\ \hline
+$S_L$ & $Z=\gamma + \eta ln(X - \epsilon)$ & $\eta >0, -\infty < \gamma, \epsilon < \infty$ & $X > \epsilon$ \\ \hline
+$S_U$ & $Z=\gamma + \eta \sinh^{-1}(\frac {X - \epsilon} {\lambda})$ & $\eta, \lambda >0, -\infty < \gamma, \epsilon < \infty$ & $-\infty < X < \infty$ \\ \hline
+\end{tabular}
+\end{table}
+-->
+
+<!--
+# Due date: February 6, 11:59 pm.
+-->
+
+\pagebreak
+
+
+<!--
+See marks assigned to each problem, the marks are allocated to the write up and for the solution, respectively.
+-->
+
+# General Policies  \textcolor{red}{[Total 60 marks]}
+
+- Your assignment solutions should be created in `"RStudio"` with R Markdown to include the R codes and should be saved as an R Markdown file and a PDF file generated from the R Markdown file. You should name your files as `"Lastname-Firstname-Stat635-A3.Rmd"` and 
+`"Lastname-Firstname-Stat635-A3.pdf"`.
+- Test your R codes before submission to make sure it can be executed successfully in `"RStudio"`.
+- For each assignment, submit only one PDF file and the associated Rmd file to D2L, and the same PDF to gradescope.ca. Only the PDF file in gradescope is graded. The Rmd file may be used to test your R programs when needed. 
+- If Monte-Carlo methods are used, you must fix the random seed in your R code by using **set.seed(2022)**.
+- For all numerical problems, summarize the computer generated results in tables or figures and interpret them using your own words, then draw conclusions from them. **Show all your work and spell out the details**. 
+- Late submission is not acceptable.
+- For guidelines on how to write a good assignment, go to D2L to read two sample assignments, **Bad-assignment-example.pdf** and 
+**Good-assignment-example.pdf**, one is bad and the other is good, you are expected to do a good one.  
+
+\noindent {\bf Note:}  Materials are based on Dobson and Barnett (D\&B or DB), 3rd Edition, 2008.   
+
+
+\pagebreak
+
+# Problem 4. \textcolor{red}{Exercise 6.27 on pp. 350-351 of JW.}
+
+__\textcolor{blue}{a) Plot the mean vectors for husbands and wives as sample profiles}__
+
+__Read the data and draw the profile plot__
+
+```{r}
+###########################
+# Profile analysis of spouses rating each other; data in Table 6.14
+data = read.table("C:/Users/Hao Nan Wang/Desktop/schedule/ucalgary/STAT 625/T6-14.dat")
+tail(data,1)
+X = as.matrix(data[,1:4])
+spouse = c(rep(1,30), rep(2,30)) # 1 = Husband rating wife, 2 = Wife rating husband
+spouse = as.factor(spouse)
+xbar1 = colMeans(X[spouse==1,])
+xbar2 = colMeans(X[spouse==2,])
+# Plot of estimated profiles:
+matplot(1:4, cbind(xbar1,xbar2), type = 'l', xaxp = c(1,4,3),
+lty = 1, lwd =3, col= 1:2, xlab = "Criterion", ylab = "Average rating for criterion", 
+  main = "Estimated profiles")
+legend("topleft", c("husbands", "wives"), lty = 1, lwd = 2, col= 1:2)
+```
+
+When considering the profile plot constructed from the sample data above, it appears there may be a parallel relationship in the population as the two samples move closely together.
+
+\pagebreak
+__\textcolor{blue}{b) parallelism test, coincidence test and level test}__
+
+__Test for parallel__
+
+```{r}
+##################################
+## Test for parallel profiles, two ways
+C = rbind(c(-1, 1, 0, 0), c(0, -1, 1, 0), c(0, 0, -1, 1)) # contrast matrix
+Y = X%*%t(C)
+# Calc Tsqd:
+ybar1 = colMeans(Y[spouse==1,])
+ybar2 = colMeans(Y[spouse==2,])
+n1 = nrow(Y[spouse==1,])
+n2 = nrow(Y[spouse==2,])
+dbar = ybar1 - ybar2
+S1 = cov(Y[spouse==1,])
+S2 = cov(Y[spouse==2,])
+dfS = (n1-1) + (n2-1)
+Spooled = ((n1-1)*S1 + (n2-1)*S2)/dfS
+cov.est = (1/n1 + 1/n2)*Spooled
+Tsqd = t(dbar)%*%solve(cov.est, dbar)
+
+df1 = length(dbar)
+df2 = dfS - df1 + 1
+F = df2*Tsqd/(df1*dfS)
+pval = pf(F, df1, df2, lower.tail = 0)
+pval # .062559
+
+# Using the R function manova():
+fit = manova(Y ~ spouse)
+summary(fit)
+# Summarize an Analysis of Variance Model
+summary.aov(fit) # Third difference in slopes is most significant
+```
+
+$$H_{10}:\mu_{Y1}=\mu_{Y2} \text{     against   } H_{11}:\mu_{Y1}\neq\mu_{Y2}$$
+
+From manova and manual computation, We get p-value $=$ 0.06256, which is greater than $\alpha=0.05$, thus, we DO NOT reject the null hypothesis at 95% significant level. This means that the parallelism hypothesis is not rejected and the husband rating wife profile is parallel to the wife rating husband profile. In other words, successive (adjacent) differences between means are equal.
+
+__Test for coincident__
+
+```{r}
+##################################
+## Test for coincident profiles
+x1 = rowSums(X[spouse==1,]) # 1 = Husband rating wife, 2 = Wife rating husband
+x2 = rowSums(X[spouse==2,])
+# If var. equal is TRUE then the pooled estimate of the variance is used. 
+t.test(x1,x2, var.equal = T) # pval = .2207 
+t.test(x1,x2) # Welch test; still pval = .2207
+# Using the R function aov():
+fit = aov(rowSums(X) ~ spouse)
+summary(fit)
+```
+
+$$H_{20}:\mu_{Y1}=\mu_{Y2} \text{     against   } H_{21}:\mu_{Y1}\neq\mu_{Y2}$$
+
+From t-test or aov() function, we can clearly see that the p-value is 0.2207, which is greater than $\alpha=0.05$, this means that we DO NOT REJECT the null hypothesis at 95% significance level and making a conclusion that coincidence hypothesis is not rejected, which means that the wife rating husband profile and the husband rating wife profile are coincident, meaning the population means are equal for the two groups.
+
+__Test for flatness__
+
+```{r}
+##################################
+## Test for level profiles, using the combined sample of Y's
+dbar = colMeans(Y)
+df1 = length(dbar)
+S = cov(Y)
+cov.est = S/nrow(Y)
+dfS = nrow(Y) - 1
+Tsqd = t(dbar)%*%solve(cov.est, dbar)
+df2 = dfS - df1 + 1
+Fcalc = df2*Tsqd/(df1*dfS)
+pval = pf(Fcalc, df1, df2, lower.tail = 0)
+pval # .00015
+```
+
+$$H_{30}:\mu_{U}=0_{(P-1) \times 1} \text{     against   } H_{31}:\mu_{U}\neq0$$
+
+As we can see that the p-value is less than $\alpha=0.05$. This means that we REJECT the null hypothesis at 95% significance level and making a conclusion that flatness hypothesis is rejected, which means that the wife rating husband profile and the husband rating wife profile are not flat, meaning it is not the case where all the means are equal. 

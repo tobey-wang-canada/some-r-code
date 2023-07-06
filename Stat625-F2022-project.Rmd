@@ -1,0 +1,4194 @@
+---
+title: "STAT 625 Final Project"
+author: "Jessica Grant (UCID: 30049554) and Hao Nan Wang (UCID: 30185958)"
+date: "2022-12-19"
+output:
+  pdf_document:
+    extra_dependencies:
+    - bbm
+    - xcolor
+    - bm
+    toc: yes
+    toc_depth: 3
+  html_document:
+    df_print: paged
+    toc: yes
+  html_notebook:
+    toc: yes
+---
+
+\pagebreak
+
+# Overview
+
+This project considers 3 independent samples, each from a p-dimensional multivariate normal population. The focus of the project is to test whether the sample means are equivalent. That is, the following hypothesis test is evaluated;
+$$
+\begin{aligned}
+H_0 : \mu_1 = \mu_2 \;\;\;\;\;\;\;\;\;\;\;\;\;\;\; H_1 : \mu_1 \neq \mu_2
+\end{aligned}
+$$
+
+The two Hotelling’s $T^2$-tests used to test the above null and alternative hypotheses are defined as follows;
+$$
+\begin{aligned}
+T_1^2 &=\Bigr(\frac{1}{n_1}+\frac{1}{n_2}\Bigr)^{-1}(\bar{X_1}-\bar{X_2})^TS_{pooled,12}^{-1}(\bar{X_1}-\bar{X_2}) \\
+S_{pooled,12}&=\frac{(n_1-1)S_1+(n_2-1)S_2}{n_1+n_2-2} \\
+T_2^2 &=\Bigr(\frac{1}{n_1}+\frac{1}{n_2}\Bigr)^{-1}(\bar{X_1}-\bar{X_2})^TS_{pooled,123}^{-1}(\bar{X_1}-\bar{X_2})\\
+S_{pooled,123}&=\frac{(n_1-1)S_1+(n_2-1)S_2+(n_3-1)S_3}{n_1+n_2+n_3-3}
+\end{aligned}
+$$
+
+For both the two and the three sample tests, 2 and 3 dimensional data is considered along with the following sample size configurations;
+                    
+                    (i) n1 = n2 = n3;
+                    (ii) n1 << n2, n3 = n1;
+                    (iii) n1 >> n2, n3 = n1; and;
+                    (iv) n1 = n2 = n, n3 >> n. 
+
+The following analysis consists of four key parts, in part 1, a Monte Carlo simulation is performed where the sample mean values are fixed such that $H_0$ is true. In this part, the empirical levels of the two tests, $T_1^2$ and $T_1^2$, are computed so that it can be determined if the tests are able to maintain the nominal 5% level. In the second part, the alternative is considered and a Monte Carlo simulation is performed where the sample mean values are fixed such that $H_0$ is not true. In this part, the empirical powers of both the $T_1^2$ and $T_1^2$ tests are obtained so that the more powerful test can be identified. In the third part of the analysis, the asymptotic distributions of $T_1^2$ and $T_1^2$ are explored by evaluating the impact of non-normality and the validity of the large-sample approximation. Finally in the fourth part, performance measures are considered in order to evaluate the asymptotic approximation explored in part 3.
+
+## Monte Carlo Repeats
+Throughout this analysis, the number of simulation repeats are fixed at 1000. Therefore 1000 repeated samples are generated from the 3 multivariate normal populations $N_p(\mu_1, \Sigma)$, $N_p(\mu_2, \Sigma)$, and $N_p(\mu_3, \Sigma)$, with the respective sizes for (n1, n2, n3), in parts 1 and 2, and from the non-normal multivariate distributions, multivariate t-distribution and multivariate Laplace distribution, in part 3. 
+
+In parts 1 and 2, when both the $T^2$ tests are carried out, 1000 test results are generated for each of the varying sample sizes, and of the 1000 results, a certain number of them pertain to rejections while the rest pertain to non-rejections, these results are then used to determine the empirical levels of the two tests in part 1 and the empirical powers of the two tests in part 2. In the 3rd part, only the values of $T_1^2$ and $T_1^2$ are computed as parts 3 and 4 consider only use the test statistics values to perform their analysis.
+
+# Part 1. Monte Carlo Simulations when $H_0$ is True
+
+The hypothesis test being carried out is below.
+$$
+\begin{aligned}
+H_0 : \mu_1 = \mu_2 \;\;\;\;\;\;\;\;\;\;\;\;\;\;\; H_1 : \mu_1 \neq \mu_2
+\end{aligned}
+$$
+The following two Hotelling's $T^2$-tests are used to perform the hypothesis test.
+$$
+T_1^2=\Bigr(\frac{1}{n_1}+\frac{1}{n_2}\Bigr)^{-1}(\bar{X_1}-\bar{X_2})^TS_{pooled,12}^{-1}(\bar{X_1}-\bar{X_2}) \sim \frac{p(n_1+n_2-2)}{n_1+n_2-p-1}F_{p,n_1+n_2-p-1}
+$$
+where $S_{pooled,12}=\frac{(n_1-1)S_1+(n_2-1)S_2}{n_1+n_2-2}$
+
+$$T_2^2=\Bigr(\frac{1}{n_1}+\frac{1}{n_2}\Bigr)^{-1}(\bar{X_1}-\bar{X_2})^TS_{pooled,123}^{-1}(\bar{X_1}-\bar{X_2})\sim \frac{p(n_1+n_2-2)}{n_1+n_2-p-1}F_{p,n_1+n_2-p-1}$$
+
+where $S_{pooled,123}=\frac{(n_1-1)S_1+(n_2-1)S_2+(n_3-1)S_3}{n_1+n_2+n_3-3}$
+
+To begin, 1000 repeats were generated along with their corresponding random samples. The values of $\mu_1$ and $\mu_2$ were fixed such that the null hypothesis is true.
+
+Note that the following configurations of eigenvalues and orientation angels are used to generate the rotation matrix and therefore the variance-covariance matrices.
+$$
+p = 2: (\lambda_1 = 1, \lambda_2 = 5,\theta = \frac{\pi}{2} ) \;\;\;\;\;\;\;\;\;\; 
+p = 3: (\lambda_1 = 1, \lambda_2 = 3,\lambda_3 = 10), (\theta_1 = \frac{\pi}{3},\theta_2 = \frac{\pi}{3},\theta_3 = -\frac{\pi}{3})
+$$
+
+```{r, warning=FALSE, echo=FALSE, include=FALSE}
+## theta
+theta = pi/2
+## rotation matrix
+rotation.matrix.2.2 = matrix(c(cos(theta), -sin(theta), sin(theta), cos(theta)), 2, 2)
+## lambda
+lambda1 = 1
+lambda2 = 5
+## sigma matrix
+sigma.2.2 = rotation.matrix.2.2 %*% matrix(c(lambda1,0,0,lambda2),
+2, 2)%*%t(rotation.matrix.2.2)
+```
+
+```{r, warning=FALSE, echo=FALSE, include=FALSE}
+## theta
+theta1 = pi/3
+theta2 =pi/3
+theta3 = -pi/3
+## rotation matrix
+rotation.matrix.3.3 = matrix(c(cos(theta1)*cos(theta3)-cos(theta2)*sin(theta1)*sin(theta3),
+-cos(theta2)*cos(theta3)*sin(theta1)-cos(theta1)*sin(theta3),
+sin(theta1)*sin(theta2),
+cos(theta3)*sin(theta1)+cos(theta1)*cos(theta2)*sin(theta3),
+cos(theta1)*cos(theta2)*cos(theta3)-sin(theta1)*sin(theta3),
+-cos(theta1)*sin(theta2),
+sin(theta2)*sin(theta3),
+cos(theta3)*sin(theta2),
+cos(theta2)), 3, 3, byrow = TRUE)
+## lambda
+lambda1 = 1
+lambda2 = 3
+lambda3 = 10
+## sigma matrix
+sigma.3.3 = rotation.matrix.3.3 %*% matrix(c(lambda1,0,0,0,lambda2,0,0,0,lambda3),
+3, 3)%*%t(rotation.matrix.3.3)
+```
+
+```{r, warning=FALSE, echo=FALSE, include=FALSE}
+library(matlib)
+library(mvtnorm)
+# R updated version after optimization
+T1_square.all = c()
+T2_square.all = c()
+F.value.t1 = c()
+P.value.t1 = c()
+F.value.t2 = c()
+P.value.t2 = c()
+generator.t2 = function(mu1, mu2, mu3, n1, n2, n3){
+  ## mu where mu1 = mu2 = mu0 = 0 and we set mu3 = 10
+  set.seed(625)
+  for (i in 1:1000){
+    if (length(mu1)==2){
+    x1 = rmvnorm(n=n1, mean = mu1, sigma = sigma.2.2)
+    x2 = rmvnorm(n=n2, mean = mu2, sigma = sigma.2.2)
+    x3 = rmvnorm(n=n3, mean = mu3, sigma = sigma.2.2)
+    }
+    else {
+    x1 = rmvnorm(n=n1, mean = mu1, sigma = sigma.3.3)
+    x2 = rmvnorm(n=n2, mean = mu2, sigma = sigma.3.3)
+    x3 = rmvnorm(n=n3, mean = mu3, sigma = sigma.3.3) 
+    }
+    
+    S_pool.2.2 = ((n1-1)*cov(x1)+(n2-1)*cov(x2))/(n1+n2-2)
+    T1_square = (1/n1+1/n2)^(-1)*t(colMeans(x1)-colMeans(x2))%*%inv(S_pool.2.2)%*%
+      (colMeans(x1)-colMeans(x2))
+    T1_square.all[i] = T1_square
+    F.value.t1 = (n1+n2-2-1)/(2*(n1+n2-2))*T1_square
+    P.value.t1 = cbind(P.value.t1, 1-pf(F.value.t1, 2, n1+n2-2-1))
+    
+    S_pool.3.3 = ((n1-1)*cov(x1)+(n2-1)*cov(x2)+(n3-1)*cov(x3))/(n1+n2+n3-3)
+    T2_square = (1/n1+1/n2)^(-1)*t(colMeans(x1)-colMeans(x2))%*%inv(S_pool.3.3)%*%
+      (colMeans(x1)-colMeans(x2))
+    T2_square.all[i] = T2_square
+    F.value.t2 = (n1+n2-2-1)/(2*(n1+n2-2))*T2_square
+    P.value.t2 = cbind(P.value.t2, 1-pf(F.value.t2, 2, n1+n2-2-1))
+  }
+Reject.t1 = sum(P.value.t1<0.05)
+Not.Reject.t1 = sum(P.value.t1>=0.05)
+Empirical.Level.t1 = Reject.t1/(Reject.t1+Not.Reject.t1)
+Reject.t2 = sum(P.value.t2<0.05)
+Not.Reject.t2 = sum(P.value.t2>=0.05)
+Empirical.Level.t2 = Reject.t2/(Reject.t2+Not.Reject.t2)
+upper.quantile.t1 = quantile(T1_square.all[order(T1_square.all)], c(.85,.90,.95,.975,.99,.995))
+upper.quantile.t2 = quantile(T2_square.all[order(T2_square.all)], c(.85,.90,.95,.975,.99,.995))
+return(c(upper.quantile.t1, upper.quantile.t2, Reject.t1, Not.Reject.t1, Empirical.Level.t1,
+         Reject.t2, Not.Reject.t2, Empirical.Level.t2))
+}
+```
+
+## Results
+
+$$\text{Empirical Level}:\hat{\alpha_k}(n_1, n_2, n_3|p)=\frac{\text{number of repeats} \ni \text{Test k rejected } H_0}{R}$$
+
+```{r, warning=FALSE, echo=FALSE}
+#case i: $n_1=n_2=n_3$:
+#p=2
+upper.quantile_t12_1.1 <-generator.t2(c(0,0), c(0,0),c(10,10),100,100,100)[1:6]
+upper.quantile_t22_1.1 <-generator.t2(c(0,0), c(0,0),c(10,10),100,100,100)[7:12]
+rejects_t2_1.1 <- generator.t2(c(0,0), c(0,0),c(10,10),100,100,100)[13:18]
+#p=3
+upper.quantile_t12_1.2 <- generator.t2(c(0,0,0), c(0,0,0), c(10,10,10), 100,100,100)[1:6]
+upper.quantile_t22_1.2 <- generator.t2(c(0,0,0), c(0,0,0), c(10,10,10), 100,100,100)[7:12]
+rejects_t2_1.2 <- generator.t2(c(0,0,0), c(0,0,0),c(10,10,10),100,100,100)[13:18]
+
+#case ii $n_1<<n_2, n_3=n_1$:
+#p=2
+upper.quantile_t12_2.1<-generator.t2(c(0,0), c(0,0),c(10,10), 25,100,25)[1:6]
+upper.quantile_t22_2.1<-generator.t2(c(0,0), c(0,0),c(10,10), 25,100,25)[7:12]
+rejects_t2_2.1 <- generator.t2(c(0,0), c(0,0),c(10,10),25,100,25)[13:18]
+#p=3
+upper.quantile_t12_2.2<-generator.t2(c(0,0,0), c(0,0,0), c(10,10,10), 25,100,25)[1:6]
+upper.quantile_t22_2.2<-generator.t2(c(0,0,0), c(0,0,0), c(10,10,10), 25,100,25)[7:12]
+rejects_t2_2.2 <- generator.t2(c(0,0,0), c(0,0,0),c(10,10,10),25,100,25)[13:18]
+
+#case iii $n_1>>n_2, n_3=n_1$:
+#p=2
+upper.quantile_t12_3.1<-generator.t2(c(0,0), c(0,0), c(10,10),100,25,100)[1:6]
+upper.quantile_t22_3.1<-generator.t2(c(0,0), c(0,0), c(10,10),100,25,100)[7:12]
+rejects_t2_3.1 <- generator.t2(c(0,0), c(0,0),c(10,10),100,25,100)[13:18]
+#p=3
+upper.quantile_t12_3.2<-generator.t2(c(0,0,0), c(0,0,0), c(10,10,10), 100,25,100)[1:6]
+upper.quantile_t22_3.2<-generator.t2(c(0,0,0), c(0,0,0), c(10,10,10), 100,25,100)[7:12]
+rejects_t2_3.2 <- generator.t2(c(0,0,0), c(0,0,0),c(10,10,10),25,100,100)[13:18]
+
+#case iv $n_1=n_2=n, n_3>>n$:
+#p=2
+upper.quantile_t12_4.1<-generator.t2(c(0,0), c(0,0), c(10,10), 25,25,100)[1:6]
+upper.quantile_t22_4.1<-generator.t2(c(0,0), c(0,0), c(10,10), 25,25,100)[7:12]
+rejects_t2_4.1 <- generator.t2(c(0,0), c(0,0),c(10,10),25,25,100)[13:18]
+#p=3
+upper.quantile_t12_4.2<-generator.t2(c(0,0,0), c(0,0,0), c(10,10,10), 25,25,100)[1:6]
+upper.quantile_t22_4.2<-generator.t2(c(0,0,0), c(0,0,0), c(10,10,10), 25,25,100)[7:12]
+rejects_t2_4.2 <- generator.t2(c(0,0,0), c(0,0,0),c(10,10,10),25,25,100)[13:18]
+```
+
+The following tables summarize the tests results for when p = 2.
+
+```{r echo=FALSE, warning=FALSE}
+library(knitr)
+library(kableExtra)
+#summary table for p =2 
+table <- cbind(rejects_t2_1.1[1:3],rejects_t2_2.1[1:3],rejects_t2_3.1[1:3],rejects_t2_4.1[1:3])
+rownames(table) <- c("T12 Test Rejects", "T12 Test Not Rejects", "T12 Test Empirical Level")
+knitr::kable(table, col.names = c("Sample Size 100, 100,100","Sample Size 25, 100,25","Sample Size 100, 25,100","Sample Size 25, 25,100"), caption = "Test Results for $T_1^2$ Tests where p = 2") %>% 
+  kable_styling(latex_options=c("scale_down", "HOLD_position"))
+table <- cbind(rejects_t2_1.1[4:6],rejects_t2_2.1[4:6],rejects_t2_3.1[4:6],rejects_t2_4.1[4:6])
+rownames(table) <- c("T22 Test Rejects", "T22 Test Not Rejects", "T22 Test Empirical Level")
+knitr::kable(table, col.names = c("Sample Size 100, 100,100","Sample Size 25, 100,25","Sample Size 100, 25,100","Sample Size 25, 25,100"), caption = "Test Results for $T_2^2$ Tests where p = 2") %>% 
+  kable_styling(latex_options=c("scale_down", "HOLD_position"))
+```
+
+The following tables summarize the tests results for when p = 3.
+
+```{r echo=FALSE, warning=FALSE}
+#summary table for p =3 
+table <- cbind(rejects_t2_1.2[1:3],rejects_t2_2.2[1:3],rejects_t2_3.2[1:3],rejects_t2_4.2[1:3])
+rownames(table) <- c("T12 Test Rejects", "T12 Test Not Rejects", "T12 Test Empirical Level")
+knitr::kable(table, col.names = c("Sample Size 100, 100,100","Sample Size 25, 100,25","Sample Size 100, 25,100","Sample Size 25, 25,100"), caption = "Test Results for $T_1^2$ Tests where p = 3") %>% 
+  kable_styling(latex_options=c("scale_down", "HOLD_position"))
+table <- cbind(rejects_t2_1.2[4:6],rejects_t2_2.2[4:6],rejects_t2_3.2[4:6],rejects_t2_4.2[4:6])
+rownames(table) <- c("T22 Test Rejects", "T22 Test Not Rejects", "T22 Test Empirical Level")
+knitr::kable(table, col.names = c("Sample Size 100, 100,100","Sample Size 25, 100,25","Sample Size 100, 25,100","Sample Size 25, 25,100"), caption = "Test Results for $T_2^2$ Tests where p = 3") %>% 
+  kable_styling(latex_options=c("scale_down", "HOLD_position"))
+```
+
+```{r, warning=FALSE, echo=FALSE, out.width="60%", out.height="40%", fig.align='center'}
+# Grouped Barchart
+## case i
+a = generator.t2(c(0,0), c(0,0),c(10,10),100,100,100)
+b = generator.t2(c(0,0,0), c(0,0,0), c(10,10,10), 100,100,100)
+## case ii
+c = generator.t2(c(0,0), c(0,0),c(10,10), 25,100,25)
+d = generator.t2(c(0,0,0), c(0,0,0), c(10,10,10), 25,100,25)
+## case iii
+e = generator.t2(c(0,0), c(0,0), c(10,10),100,25,100)
+f = generator.t2(c(0,0,0), c(0,0,0), c(10,10,10), 100,25,100)
+## case iv
+g = generator.t2(c(0,0), c(0,0), c(10,10), 25,25,100)
+h = generator.t2(c(0,0,0), c(0,0,0), c(10,10,10), 25,25,100)
+
+library(ggplot2)
+case = c(rep("Sample Size \n 100, 100,100", 4), rep("Sample Size \n 25, 100,25", 4), rep("Sample Size \n 100, 25,100", 4), rep("Sample Size \n 25, 25,100", 4))
+test = rep(c("T12 p=2","T22 p=2","T12 p=3","T22 p=3"), 4)
+value = c(a[13],a[16],b[13],b[16],c[13],c[16],d[13],d[16],
+          e[13],e[16],f[13],f[16],g[13],g[16],h[13],h[16])
+bardata = data.frame(case, test, value)
+ggplot(bardata, aes(fill=test, y=value, x=case,))+
+  geom_bar(position="dodge", stat="identity")+
+  geom_hline(yintercept = 50, col = "red",lty=2)+
+  ggtitle("Graph 1: Number of Rejects")+xlab("Sample Size Configuration") + ylab("Count of Rejects")
+```
+
+__Results Summary:__
+In statistical hypothesis, $\alpha=0.05$ is the nominal level and it is also the tests' probability of a Type I error. It is worth noting when data and sample size are given, the upper bound on probability of one of the errors can be chosen and the probability of the other one is fixed. As the empirical levels shown above, when p=2, the empirical levels are close to the the nominal level 0.05. The difference among case iv and other cases is that case iv has a smaller sample size for $x_1$ and $x_2$. However, one should remember that a small or large sample size does not affect Type I error as the sample size will not increase the occurrence of $\alpha$. Additionally, in multivariate data, the pooled covariance matrix, which computes the average of the sample covariance matrices of the groups. If one assume they are equal, then the pooled covariance matrix is an estimate of the common covariance. One can observe that when p=3, the empirical level is larger than the nominal level. This is because the pooled sample variance-covariance matrix being used in $T^2_{2}$ is not multiplied by the sum of the inverses of the three sample sizes, instead, it uses two sample sizes. So this difference causes a larger pooled variance-covariance matrix. In conclusion, both tests perform better when p=2 in comparison with the case when p=3. Although the sample will not increase the $\alpha$ value, it affects the pooled sample variance-covariance matrix.
+
+# Part 2. Monte Carlo Simulations when $H_0$ is not True
+
+The hypothesis test being carried out is below.
+$$
+\begin{aligned}
+H_0 : \mu_1 = \mu_2 \;\;\;\;\;\;\;\;\;\;\;\;\;\;\; H_1 : \mu_1 \neq \mu_2
+\end{aligned}
+$$
+
+The following two Hotelling's $T^2$-tests are used to perform the hypothesis test.
+$$
+T_{1, adj}^2=\Bigr(\frac{1}{n_1}+\frac{1}{n_2}\Bigr)^{-1}(\bar{X_1}-\bar{X_2}-\delta_0)^TS_{pooled,12}^{-1}(\bar{X_1}-\bar{X_2}-\delta_0) \sim \frac{p(n_1+n_2-2)}{n_1+n_2-p-1}F_{p,n_1+n_2-p-1}
+$$
+
+where $S_{pooled,12}=\frac{(n_1-1)S_1+(n_2-1)S_2}{n_1+n_2-2}$
+
+$$
+T_{2, adj}^2=\Bigr(\frac{1}{n_1}+\frac{1}{n_2}\Bigr)^{-1}(\bar{X_1}-\bar{X_2}-\delta_0)^TS_{pooled,123}^{-1}(\bar{X_1}-\bar{X_2}-\delta_0)\sim \frac{p(n_1+n_2-2)}{n_1+n_2-p-1}F_{p,n_1+n_2-p-1}
+$$
+
+where $S_{pooled,123}=\frac{(n_1-1)S_1+(n_2-1)S_2+(n_3-1)S_3}{n_1+n_2+n_3-3}$
+
+Note that the following configurations of eigenvalues and orientation angels are used to generate the rotation matrix and therefore the variance-covariance matrices.
+
+$$
+p = 2: (\lambda_1 = 1, \lambda_2 = 5,\theta = \frac{\pi}{2} ) \;\;\;\;\;\;\;\;\;\; 
+p = 3: (\lambda_1 = 1, \lambda_2 = 3,\lambda_3 = 10), (\theta_1 = \frac{\pi}{3},\theta_2 = \frac{\pi}{3},\theta_3 = -\frac{\pi}{3})
+$$
+
+To begin, 1000 repeats were generated along with their corresponding random samples. The values of $\mu_1$ and $\mu_2$ were fixed such that the null hypothesis is not true and the following condition is satisfied.
+
+$$
+\mu_1 - \mu_2 = \sqrt{\frac{\delta}{p}I_p} \;\;\;\;\;\;\;\;\; \delta=2,4,8,16
+$$
+
+Recall: 
+
+1. _Power_ is the probability of rejecting the null hypothesis when, in fact, it is false, denoted as $1-\beta$
+
+2. _Type I Error_ incur: reject the null hypothesis when the null hypothesis is indeed true, denoted as $\alpha$
+
+3. _Type II Error_ incur: fail to reject the null hypothesis when it is false, denoted as $\beta$
+
+The following equation will be used to compute the empirical power in this analysis.
+
+$$\text{Empirical Power}:\hat{\gamma_k}(n_1, n_2, n_3|\delta, p)=\frac{\text{number of repeats} \ni \text{Test k rejected } H_0}{R}$$
+
+We will also use the results that $F=\frac{\chi^2_{m_1}/m_1}{\chi^2_{m_2}/m_2}$ and when the numerator $\chi^2$ is non-central, then $F$ is called as a singly non-central F-distribution with degrees of freedom (p,n-p) and __non-centrality parameter $\delta^2$__, given by $\delta^2=(\mu_1-\mu_2)^T\Sigma^{-1}(\mu_1-\mu_2)$.
+
+It is also important to note that $\mu \neq \mu_0$, the __power function__ $\beta_{T^2}(\mu)=P_{\mu, \Sigma}(\text{reject }H_0|\mu)$ of a level-$\alpha$ Hotelling's $T^2-$test with the $(1-\alpha)^{th}$ quantile $c_{\alpha}$ of $T^2_{p, n_1+n_2-p-1}$ is 
+
+$$\beta_{T^2}(\mu)=P_{\mu, \Sigma}(T^2>c^2_{\alpha}|\mu)=P_{\mu, \Sigma}\Bigr(F>\frac{n_1+n_2-p-1}{p(n_1+n_2-1)} \cdot c^2_{\alpha}|\mu\Bigr)$$.
+
+Finally, note that: $ncp=\delta^2=(\mu_1-\mu_2)^T\Sigma^{-1}(\mu_1-\mu_2)=\delta_0^T\Sigma^{-1}\delta_0=f(\delta)$ and $\delta=2,4,8,16$.
+
+```{r, warning=FALSE, echo=FALSE, include=FALSE}
+library(mvtnorm)
+# R updated version after optimization
+T1_square.all = c()
+T2_square.all = c()
+F.value.t1 = c()
+P.value.t1 = c()
+F.value.t2 = c()
+P.value.t2 = c()
+generator.delta.t2 = function(mu1, mu2, mu3, n1, n2, n3){
+  ## mu where mu1 = mu2 = mu0 = 0 and we set mu3 = 10
+  set.seed(625)
+  d0 = mu1
+  for (i in 1:1000){
+    if (length(mu1)==2){
+    x1 = rmvnorm(n=n1, mean = mu1, sigma = sigma.2.2)
+    x2 = rmvnorm(n=n2, mean = mu2, sigma = sigma.2.2)
+    x3 = rmvnorm(n=n3, mean = mu3, sigma = sigma.2.2)
+    }
+    else {
+    x1 = rmvnorm(n=n1, mean = mu1, sigma = sigma.3.3)
+    x2 = rmvnorm(n=n2, mean = mu2, sigma = sigma.3.3)
+    x3 = rmvnorm(n=n3, mean = mu3, sigma = sigma.3.3) 
+    }
+    
+    S_pool.2.2 = ((n1-1)*cov(x1)+(n2-1)*cov(x2))/(n1+n2-2)
+    T1_square = (1/n1+1/n2)^(-1)*t(colMeans(x1)-colMeans(x2)-d0)%*%inv(S_pool.2.2)%*%
+      (colMeans(x1)-colMeans(x2)-d0)
+    T1_square.all[i] = T1_square
+    F.value.t1 = (n1+n2-2-1)/(2*(n1+n2-2))*T1_square
+    P.value.t1 = cbind(P.value.t1, 1-pf(F.value.t1, 2, n1+n2-2-1))
+    
+    S_pool.3.3 = ((n1-1)*cov(x1)+(n2-1)*cov(x2)+(n3-1)*cov(x3))/(n1+n2+n3-3)
+    T2_square = (1/n1+1/n2)^(-1)*t(colMeans(x1)-colMeans(x2)-d0)%*%inv(S_pool.3.3)%*%
+      (colMeans(x1)-colMeans(x2)-d0)
+    T2_square.all[i] = T2_square
+    F.value.t2 = (n1+n2-2-1)/(2*(n1+n2-2))*T2_square
+    P.value.t2 = cbind(P.value.t2, 1-pf(F.value.t2, 2, n1+n2-2-1))
+  }
+Reject.t1 = sum(P.value.t1<0.05)
+Not.Reject.t1 = sum(P.value.t1>=0.05)
+Empirical.Level.t1 = Reject.t1/(Reject.t1+Not.Reject.t1)
+Reject.t2 = sum(P.value.t2<0.05)
+Not.Reject.t2 = sum(P.value.t2>=0.05)
+Empirical.Level.t2 = Reject.t2/(Reject.t2+Not.Reject.t2)
+upper.quantile.t1 = quantile(T1_square.all[order(T1_square.all)], c(.85,.90,.95,.975,.99,.995))
+upper.quantile.t2 = quantile(T2_square.all[order(T2_square.all)], c(.85,.90,.95,.975,.99,.995))
+return(c(upper.quantile.t1, upper.quantile.t2, Reject.t1, Not.Reject.t1, Empirical.Level.t1,
+         Reject.t2, Not.Reject.t2, Empirical.Level.t2))
+}
+```
+
+
+```{r, warning=FALSE, echo=FALSE}
+#case i: $n_1=n_2=n_3$:
+#delta = 2
+# p = 2
+delta2.upper.quantile_t12_1.1 <-generator.delta.t2(c(sqrt(2/2),sqrt(2/2)),c(0,0),c(10,10), 100,100,100)[1:6]
+delta2.upper.quantile_t22_1.1 <-generator.delta.t2(c(sqrt(2/2),sqrt(2/2)),c(0,0),c(10,10), 100,100,100)[7:12]
+delta2.rejects_t2_1.1 <- generator.delta.t2(c(sqrt(2/2),sqrt(2/2)),c(0,0),c(10,10), 100,100,100)[13:18]
+# p = 3
+delta2.upper.quantile_t12_1.2 <- generator.delta.t2(c(sqrt(2/3),sqrt(2/3),sqrt(2/3)), c(0,0,0), c(10,10,10), 100,100,100)[1:6]
+delta2.upper.quantile_t22_1.2 <- generator.delta.t2(c(sqrt(2/3),sqrt(2/3),sqrt(2/3)), c(0,0,0), c(10,10,10), 100,100,100)[7:12]
+delta2.rejects_t2_1.2 <- generator.delta.t2(c(sqrt(2/3),sqrt(2/3),sqrt(2/3)), c(0,0,0), c(10,10,10), 100,100,100)[13:18]
+
+#delta = 4
+# p = 2
+delta4.upper.quantile_t12_1.1 <-generator.delta.t2(c(sqrt(4/2),sqrt(4/2)), c(0,0), c(10,10), 100,100,100)[1:6]
+delta4.upper.quantile_t22_1.1 <-generator.delta.t2(c(sqrt(4/2),sqrt(4/2)), c(0,0), c(10,10), 100,100,100)[7:12]
+delta4.rejects_t2_1.1 <- generator.delta.t2(c(sqrt(4/2),sqrt(4/2)), c(0,0), c(10,10), 100,100,100)[13:18]
+# p= 3
+delta4.upper.quantile_t12_1.2 <- generator.delta.t2(c(sqrt(4/3),sqrt(4/3),sqrt(4/3)), c(0,0,0), c(10,10,10), 100,100,100)[1:6]
+delta4.upper.quantile_t22_1.2 <- generator.delta.t2(c(sqrt(4/3),sqrt(4/3),sqrt(4/3)), c(0,0,0), c(10,10,10), 100,100,100)[7:12]
+delta4.rejects_t2_1.2 <- generator.delta.t2(c(sqrt(4/3),sqrt(4/3),sqrt(4/3)), c(0,0,0), c(10,10,10), 100,100,100)[13:18]
+
+
+#delta = 8
+# p = 2
+delta8.upper.quantile_t12_1.1 <-generator.delta.t2(c(sqrt(8/2),sqrt(8/2)), c(0,0), c(10,10), 100,100,100)[1:6]
+delta8.upper.quantile_t22_1.1 <-generator.delta.t2(c(sqrt(8/2),sqrt(8/2)), c(0,0), c(10,10), 100,100,100)[7:12]
+delta8.rejects_t2_1.1 <- generator.delta.t2(c(sqrt(8/2),sqrt(8/2)), c(0,0), c(10,10), 100,100,100)[13:18]
+# p= 3
+delta8.upper.quantile_t12_1.2 <- generator.delta.t2(c(sqrt(8/3),sqrt(8/3),sqrt(8/3)), c(0,0,0), c(10,10,10), 100,100,100)[1:6]
+delta8.upper.quantile_t22_1.2 <- generator.delta.t2(c(sqrt(8/3),sqrt(8/3),sqrt(8/3)), c(0,0,0), c(10,10,10), 100,100,100)[7:12]
+delta8.rejects_t2_1.2 <- generator.delta.t2(c(sqrt(8/3),sqrt(8/3),sqrt(8/3)), c(0,0,0), c(10,10,10), 100,100,100)[13:18]
+
+#delta = 16
+# p = 2
+delta16.upper.quantile_t12_1.1 <-generator.delta.t2(c(sqrt(16/2),sqrt(16/2)), c(0,0), c(10,10), 100,100,100)[1:6]
+delta16.upper.quantile_t22_1.1 <-generator.delta.t2(c(sqrt(16/2),sqrt(16/2)), c(0,0), c(10,10), 100,100,100)[7:12]
+delta16.rejects_t2_1.1 <- generator.delta.t2(c(sqrt(16/2),sqrt(16/2)), c(0,0), c(10,10), 100,100,100)[13:18]
+# p= 3
+delta16.upper.quantile_t12_1.2 <- generator.delta.t2(c(sqrt(16/3),sqrt(16/3),sqrt(16/3)), c(0,0,0), c(10,10,10), 100,100,100)[1:6]
+delta16.upper.quantile_t22_1.2 <- generator.delta.t2(c(sqrt(16/3),sqrt(16/3),sqrt(16/3)), c(0,0,0), c(10,10,10), 100,100,100)[7:12]
+delta16.rejects_t2_1.2 <- generator.delta.t2(c(sqrt(16/3),sqrt(16/3),sqrt(16/3)), c(0,0,0), c(10,10,10), 100,100,100)[13:18]
+```
+
+```{r, warning=FALSE, echo=FALSE}
+#case ii $n_1<<n_2, n_3=n_1$:
+#delta = 2
+# p = 2
+delta2.upper.quantile_t12_2.1 <-generator.delta.t2(c(sqrt(2/2),sqrt(2/2)), c(0,0), c(10,10), 25,100,25)[1:6]
+delta2.upper.quantile_t22_2.1 <-generator.delta.t2(c(sqrt(2/2),sqrt(2/2)), c(0,0), c(10,10), 25,100,25)[7:12]
+delta2.rejects_t2_2.1 <- generator.delta.t2(c(sqrt(2/2),sqrt(2/2)), c(0,0), c(10,10), 25,100,25)[13:18]
+# p= 3
+delta2.upper.quantile_t12_2.2 <- generator.delta.t2(c(sqrt(2/3),sqrt(2/3),sqrt(2/3)), c(0,0,0), c(10,10,10), 25,100,25)[1:6]
+delta2.upper.quantile_t22_2.2 <- generator.delta.t2(c(sqrt(2/3),sqrt(2/3),sqrt(2/3)), c(0,0,0), c(10,10,10), 25,100,25)[7:12]
+delta2.rejects_t2_2.2 <- generator.delta.t2(c(sqrt(2/3),sqrt(2/3),sqrt(2/3)), c(0,0,0), c(10,10,10), 25,100,25)[13:18]
+
+#delta = 4
+# p = 2
+delta4.upper.quantile_t12_2.1 <-generator.delta.t2(c(sqrt(4/2),sqrt(4/2)), c(0,0), c(10,10), 25,100,25)[1:6]
+delta4.upper.quantile_t22_2.1 <-generator.delta.t2(c(sqrt(4/2),sqrt(4/2)), c(0,0), c(10,10), 25,100,25)[7:12]
+delta4.rejects_t2_2.1 <- generator.delta.t2(c(sqrt(4/2),sqrt(4/2)), c(0,0), c(10,10), 25,100,25)[13:18]
+# p= 3
+delta4.upper.quantile_t12_2.2 <- generator.delta.t2(c(sqrt(4/3),sqrt(4/3),sqrt(4/3)), c(0,0,0), c(10,10,10), 25,100,25)[1:6]
+delta4.upper.quantile_t22_2.2 <- generator.delta.t2(c(sqrt(4/3),sqrt(4/3),sqrt(4/3)), c(0,0,0), c(10,10,10), 25,100,25)[7:12]
+delta4.rejects_t2_2.2 <- generator.delta.t2(c(sqrt(4/3),sqrt(4/3),sqrt(4/3)), c(0,0,0), c(10,10,10), 25,100,25)[13:18]
+
+#delta = 8
+# p = 2
+delta8.upper.quantile_t12_2.1 <-generator.delta.t2(c(sqrt(8/2),sqrt(8/2)), c(0,0), c(10,10), 25,100,25)[1:6]
+delta8.upper.quantile_t22_2.1 <-generator.delta.t2(c(sqrt(8/2),sqrt(8/2)), c(0,0), c(10,10), 25,100,25)[7:12]
+delta8.rejects_t2_2.1 <- generator.delta.t2(c(sqrt(8/2),sqrt(8/2)), c(0,0), c(10,10), 25,100,25)[13:18]
+# p= 3
+delta8.upper.quantile_t12_2.2 <- generator.delta.t2(c(sqrt(8/3),sqrt(8/3),sqrt(8/3)), c(0,0,0), c(10,10,10), 25,100,25)[1:6]
+delta8.upper.quantile_t22_2.2 <- generator.delta.t2(c(sqrt(8/3),sqrt(8/3),sqrt(8/3)), c(0,0,0), c(10,10,10), 25,100,25)[7:12]
+delta8.rejects_t2_2.2 <- generator.delta.t2(c(sqrt(8/3),sqrt(8/3),sqrt(8/3)), c(0,0,0), c(10,10,10), 25,100,25)[13:18]
+
+
+#delta = 16
+# p = 2
+delta16.upper.quantile_t12_2.1 <-generator.delta.t2(c(sqrt(16/2),sqrt(16/2)), c(0,0), c(10,10), 25,100,25)[1:6]
+delta16.upper.quantile_t22_2.1 <-generator.delta.t2(c(sqrt(16/2),sqrt(16/2)), c(0,0), c(10,10), 25,100,25)[7:12]
+delta16.rejects_t2_2.1 <- generator.delta.t2(c(sqrt(16/2),sqrt(16/2)), c(0,0), c(10,10), 25,100,25)[13:18]
+# p= 3
+delta16.upper.quantile_t12_2.2 <- generator.delta.t2(c(sqrt(16/3),sqrt(16/3),sqrt(16/3)), c(0,0,0), c(10,10,10), 25,100,25)[1:6]
+delta16.upper.quantile_t22_2.2 <- generator.delta.t2(c(sqrt(16/3),sqrt(16/3),sqrt(16/3)), c(0,0,0), c(10,10,10), 25,100,25)[7:12]
+delta16.rejects_t2_2.2 <- generator.delta.t2(c(sqrt(16/3),sqrt(16/3),sqrt(16/3)), c(0,0,0), c(10,10,10), 25,100,25)[13:18]
+```
+
+```{r, warning=FALSE, echo=FALSE}
+#case iii $n_1>>n_2, n_3=n_1$
+#delta = 2
+# p = 2
+gen3.2.2 <- generator.delta.t2(c(sqrt(2/2),sqrt(2/2)), c(0,0), c(10,10), 100, 25, 100)
+delta2.upper.quantile_t12_3.1 <-gen3.2.2[1:6]
+delta2.upper.quantile_t22_3.1 <-gen3.2.2[7:12]
+delta2.rejects_t2_3.1 <- gen3.2.2[13:18]
+# p = 3
+gen3.2.3 <-generator.delta.t2(c(sqrt(2/3),sqrt(2/3),sqrt(2/3)), c(0,0,0), c(10,10,10), 100,25,100)
+delta2.upper.quantile_t12_3.2 <-gen3.2.3[1:6]
+delta2.upper.quantile_t22_3.2 <-gen3.2.3[7:12]
+delta2.rejects_t2_3.2 <- gen3.2.3[13:18]
+
+#delta = 4
+# p = 2
+gen3.4.2 <- generator.delta.t2(c(sqrt(4/2),sqrt(4/2)), c(0,0), c(10,10), 100, 25, 100)
+delta4.upper.quantile_t12_3.1 <-gen3.4.2[1:6]
+delta4.upper.quantile_t22_3.1 <-gen3.4.2[7:12]
+delta4.rejects_t2_3.1 <- gen3.4.2[13:18]
+# p = 3
+gen3.4.3 <- generator.delta.t2(c(sqrt(4/3),sqrt(4/3),sqrt(4/3)), c(0,0,0), c(10,10,10), 100,25,100)
+delta4.upper.quantile_t12_3.2 <-gen3.4.3[1:6]
+delta4.upper.quantile_t22_3.2 <-gen3.4.3[7:12]
+delta4.rejects_t2_3.2 <- gen3.4.3[13:18]
+
+#delta = 8
+# p = 2
+gen3.8.2 <- generator.delta.t2(c(sqrt(8/2),sqrt(8/2)), c(0,0), c(10,10), 100, 25, 100)
+delta8.upper.quantile_t12_3.1 <-gen3.8.2[1:6]
+delta8.upper.quantile_t22_3.1 <-gen3.8.2[7:12]
+delta8.rejects_t2_3.1 <- gen3.8.2[13:18]
+# p = 3
+gen3.8.3 <- generator.delta.t2(c(sqrt(8/3),sqrt(8/3),sqrt(8/3)), c(0,0,0), c(10,10,10), 100,25,100)
+delta8.upper.quantile_t12_3.2 <-gen3.8.3[1:6]
+delta8.upper.quantile_t22_3.2 <-gen3.8.3[7:12]
+delta8.rejects_t2_3.2 <- gen3.8.3[13:18]
+
+#delta = 16
+# p = 2
+gen3.16.2 <- generator.delta.t2(c(sqrt(16/2),sqrt(16/2)), c(0,0), c(10,10), 100, 25, 100)
+delta16.upper.quantile_t12_3.1 <-gen3.16.2[1:6]
+delta16.upper.quantile_t22_3.1 <-gen3.16.2[7:12]
+delta16.rejects_t2_3.1 <- gen3.16.2[13:18]
+# p = 3
+gen3.16.3 <- generator.delta.t2(c(sqrt(16/3),sqrt(16/3),sqrt(16/3)), c(0,0,0), c(10,10,10), 100,25,100)
+delta16.upper.quantile_t12_3.2 <-gen3.16.3[1:6]
+delta16.upper.quantile_t22_3.2 <-gen3.16.3[7:12]
+delta16.rejects_t2_3.2 <- gen3.16.3[13:18]
+```
+
+
+```{r, warning=FALSE, echo=FALSE}
+#case iv $n_1=n_2=n, n_3>>n$:
+#delta = 2
+# p = 2
+gen4.2.2 <- generator.delta.t2(c(sqrt(2/2),sqrt(2/2)), c(0,0), c(10,10), 25, 25, 100)
+delta2.upper.quantile_t12_4.1 <-gen4.2.2[1:6]
+delta2.upper.quantile_t22_4.1 <-gen4.2.2[7:12]
+delta2.rejects_t2_4.1 <- gen4.2.2[13:18]
+# p = 3
+gen4.2.3 <-generator.delta.t2(c(sqrt(2/3),sqrt(2/3),sqrt(2/3)), c(0,0,0), c(10,10,10), 25,25,100)
+delta2.upper.quantile_t12_4.2 <-gen4.2.3[1:6]
+delta2.upper.quantile_t22_4.2 <-gen4.2.3[7:12]
+delta2.rejects_t2_4.2 <- gen4.2.3[13:18]
+
+#delta = 4
+# p = 2
+gen4.4.2 <- generator.delta.t2(c(sqrt(4/2),sqrt(4/2)), c(0,0), c(10,10), 25, 25, 100)
+delta4.upper.quantile_t12_4.1 <-gen4.4.2[1:6]
+delta4.upper.quantile_t22_4.1 <-gen4.4.2[7:12]
+delta4.rejects_t2_4.1 <- gen4.4.2[13:18]
+# p = 3
+gen4.4.3 <-generator.delta.t2(c(sqrt(4/3),sqrt(4/3),sqrt(4/3)), c(0,0,0), c(10,10,10), 25,25,100)
+delta4.upper.quantile_t12_4.2 <-gen4.4.3[1:6]
+delta4.upper.quantile_t22_4.2 <-gen4.4.3[7:12]
+delta4.rejects_t2_4.2 <- gen4.4.3[13:18]
+
+#delta = 8
+# p = 2
+gen4.8.2 <- generator.delta.t2(c(sqrt(8/2),sqrt(8/2)), c(0,0), c(10,10), 25, 25, 100)
+delta8.upper.quantile_t12_4.1 <-gen4.8.2[1:6]
+delta8.upper.quantile_t22_4.1 <-gen4.8.2[7:12]
+delta8.rejects_t2_4.1 <- gen4.8.2[13:18]
+# p = 3
+gen4.8.3 <-generator.delta.t2(c(sqrt(8/3),sqrt(8/3),sqrt(8/3)), c(0,0,0), c(10,10,10), 25,25,100)
+delta8.upper.quantile_t12_4.2 <-gen4.8.3[1:6]
+delta8.upper.quantile_t22_4.2 <-gen4.8.3[7:12]
+delta8.rejects_t2_4.2 <- gen4.8.3[13:18]
+
+#delta = 16
+# p = 2
+gen4.16.2 <- generator.delta.t2(c(sqrt(16/2),sqrt(16/2)), c(0,0), c(10,10), 25, 25, 100)
+delta16.upper.quantile_t12_4.1 <-gen4.16.2[1:6]
+delta16.upper.quantile_t22_4.1 <-gen4.16.2[7:12]
+delta16.rejects_t2_4.1 <- gen4.16.2[13:18]
+# p = 3
+gen4.16.3 <-generator.delta.t2(c(sqrt(16/3),sqrt(16/3),sqrt(16/3)), c(0,0,0), c(10,10,10), 25,25,100)
+delta16.upper.quantile_t12_4.2 <-gen4.16.3[1:6]
+delta16.upper.quantile_t22_4.2 <-gen4.16.3[7:12]
+delta16.rejects_t2_4.2 <- gen4.16.3[13:18]
+```
+
+## Results
+
+The following summarizes the tests results for when p = 2.
+
+```{r echo=FALSE, warning=FALSE}
+########################## TEST SUMMARY TABLES FROM PART 2 FOR P=2 (only delta = 2) #########################
+#summary table for p =2 and delta = 2 t12
+table <- cbind(delta2.rejects_t2_1.1[1:3],delta2.rejects_t2_2.1[1:3],delta2.rejects_t2_3.1[1:3],delta2.rejects_t2_4.1[1:3])
+rownames(table) <- c("T12 Test Rejects", "T12 Test Not Rejects", "T12 Test Empirical Power")
+knitr::kable(table, col.names = c("Sample Size 100, 100,100","Sample Size 25, 100,25","Sample Size 100, 25,100","Sample Size 25, 25,100"), caption = "Test Results for T12 Test where p = 2 and delta = 2") %>% 
+  kable_styling(latex_options=c("scale_down", "HOLD_position"))
+
+#summary table for p =2 and delta = 2 t22
+table <- cbind(delta2.rejects_t2_1.1[4:6],delta2.rejects_t2_2.1[4:6],delta2.rejects_t2_3.1[4:6],delta2.rejects_t2_4.1[4:6])
+rownames(table) <- c("T22 Test Rejects", "T22 Test Not Rejects", "T22 Test Empirical Power")
+knitr::kable(table, col.names = c("Sample Size 100, 100,100","Sample Size 25, 100,25","Sample Size 100, 25,100","Sample Size 25, 25,100"), caption = "Test Results for T22 Test where p = 2 and delta = 2") %>% 
+  kable_styling(latex_options=c("scale_down", "HOLD_position"))
+```
+
+The following summarizes the tests results for when p = 3.
+
+```{r echo=FALSE, warning=FALSE}
+########################## TEST SUMMARY TABLES FROM PART 2 FOR P=3 (delta = 2 only)#########################
+#summary table for p =2 and delta = 2 for t12
+table <- cbind(delta2.rejects_t2_1.2[1:3],delta2.rejects_t2_2.2[1:3],delta2.rejects_t2_3.2[1:3],delta2.rejects_t2_4.2[1:3])
+rownames(table) <- c("T12 Test Rejects", "T12 Test Not Rejects", "T12 Test Empirical Power")
+knitr::kable(table, col.names = c("Sample Size 100, 100,100","Sample Size 25, 100,25","Sample Size 100, 25,100","Sample Size 25, 25,100"), caption = "Test Results for T12 Test where p = 3 and delta = 2") %>% 
+  kable_styling(latex_options=c("scale_down", "HOLD_position"))
+
+#summary table for p =2 and delta = 2 for t22
+table <- cbind(delta2.rejects_t2_1.2[4:6],delta2.rejects_t2_2.2[4:6],delta2.rejects_t2_3.2[4:6],delta2.rejects_t2_4.2[4:6])
+rownames(table) <- c("T22 Test Rejects", "T22 Test Not Rejects", "T22 Test Empirical Power")
+knitr::kable(table, col.names = c("Sample Size 100, 100,100","Sample Size 25, 100,25","Sample Size 100, 25,100","Sample Size 25, 25,100"), caption = "Test Results for T22 Test where p = 3 and delta = 2") %>% 
+  kable_styling(latex_options=c("scale_down", "HOLD_position"))
+```
+
+```{r, warning=FALSE, echo=FALSE}
+# case i
+options(digits = 2)
+# T=1
+n1 = 100
+n2 = 100
+n3 = 100
+critical.t1 = qf(.95, 2, n1+n2-2-1)^2 *(n1+n2-2-1)/(2*(n1+n2-2))
+#critical.t1
+power.t1 = 1-pf(critical.t1, 2, n1+n2-2-1)
+#power.t1
+# T=2
+n1 = 100
+n2 = 100
+n3 = 100
+critical.t2 = qf(.95, 2, n1+n2+n3-3-1)^2 *(n1+n2-2-1)/(2*(n1+n2-2))
+#critical.t2
+power.t2 = 1-pf(critical.t2, 2, n1+n2-2-1)
+#power.t2
+```
+
+```{r, warning=FALSE, echo=FALSE, include=FALSE}
+# case i, p=2
+# delta = 2
+ncp = t(c(sqrt(2/2),sqrt(2/2)))%*%solve(sigma.2.2)%*%c(sqrt(2/2),sqrt(2/2))
+power.new_2.t1 = 1-pf(critical.t1, 2, n1+n2-2-1, ncp = ncp)
+power.new_2.t2 = 1-pf(critical.t2, 2, n1+n2-2-1, ncp = ncp)
+# delta = 4
+ncp = t(c(sqrt(4/2),sqrt(4/2)))%*%solve(sigma.2.2)%*%c(sqrt(4/2),sqrt(4/2))
+power.new_4.t1 = 1-pf(critical.t1, 2, n1+n2-2-1, ncp = ncp)
+power.new_4.t2 = 1-pf(critical.t2, 2, n1+n2-2-1, ncp = ncp)
+# delta = 8
+ncp = t(c(sqrt(8/2),sqrt(8/2)))%*%solve(sigma.2.2)%*%c(sqrt(8/2),sqrt(8/2))
+power.new_8.t1 = 1-pf(critical.t1, 2, n1+n2-2-1, ncp = ncp)
+power.new_8.t2 = 1-pf(critical.t2, 2, n1+n2-2-1, ncp = ncp)
+# delta = 16
+ncp = t(c(sqrt(16/2),sqrt(16/2)))%*%solve(sigma.2.2)%*%c(sqrt(16/2),sqrt(16/2))
+power.new_16.t1 = 1-pf(critical.t1, 2, n1+n2-2-1, ncp = ncp)
+power.new_16.t2 = 1-pf(critical.t2, 2, n1+n2-2-1, ncp = ncp)
+t12.2.i = c(power.t1, power.new_2.t1, power.new_4.t1, power.new_8.t1, power.new_16.t1)
+t22.2.i = c(power.t2, power.new_2.t2, power.new_4.t2, power.new_8.t2, power.new_16.t2)
+```
+
+```{r, warning=FALSE, echo=FALSE}
+# case i, p= 3
+# delta = 2
+ncp = t(c(sqrt(2/3),sqrt(2/3),sqrt(2/3)))%*%solve(sigma.3.3)%*%c(sqrt(2/3),sqrt(2/3),sqrt(2/3))
+power.new_2.t1 = 1-pf(critical.t1, 2, n1+n2-2-1, ncp = ncp)
+power.new_2.t2 = 1-pf(critical.t2, 2, n1+n2-2-1, ncp = ncp)
+# delta = 4
+ncp = t(c(sqrt(4/3),sqrt(4/3),sqrt(4/3)))%*%solve(sigma.3.3)%*%c(sqrt(4/3),sqrt(4/3),sqrt(4/3))
+power.new_4.t1 = 1-pf(critical.t1, 2, n1+n2-2-1, ncp = ncp)
+power.new_4.t2 = 1-pf(critical.t2, 2, n1+n2-2-1, ncp = ncp)
+# delta = 8
+ncp = t(c(sqrt(8/3),sqrt(8/3),sqrt(8/3)))%*%solve(sigma.3.3)%*%c(sqrt(8/3),sqrt(8/3),sqrt(8/3))
+power.new_8.t1 = 1-pf(critical.t1, 2, n1+n2-2-1, ncp = ncp)
+power.new_8.t2 = 1-pf(critical.t2, 2, n1+n2-2-1, ncp = ncp)
+# delta = 16
+ncp = t(c(sqrt(16/3),sqrt(16/3),sqrt(16/3)))%*%solve(sigma.3.3)%*%c(sqrt(16/3),sqrt(16/3),sqrt(16/3))
+power.new_16.t1 = 1-pf(critical.t1, 2, n1+n2-2-1, ncp = ncp)
+power.new_16.t2 = 1-pf(critical.t2, 2, n1+n2-2-1, ncp = ncp)
+
+t12.3.i = c(power.t1, power.new_2.t1, power.new_4.t1, power.new_8.t1, power.new_16.t1)
+t22.3.i = c(power.t2, power.new_2.t2, power.new_4.t2, power.new_8.t2, power.new_16.t2)
+```
+
+The table below summarizes the empirical powers computed with both the $T_1^2$ and $T_2^2$ tests and with 2 and 3 parameters. As expected, the results show that as $\delta$ increases, power increases as well.
+
+```{r, echo=FALSE}
+#summary table
+table <- cbind(t12.2.i,t22.2.i,t12.3.i,t22.3.i)
+rownames(table) <- c("Delta = 0", "Delta = 2", "Delta = 4", "Delta = 8", "Delta = 16")
+knitr::kable(table, col.names = c("T12 \n p = 2","T22 \n p = 2","T12 \n p = 3","T22 \n p = 3"), caption = "Empirical Power Results") %>% 
+  kable_styling(latex_options=c("HOLD_position"))
+```
+
+```{r, warning=FALSE, echo=FALSE}
+# case ii
+options(digits = 2)
+# compute (1-alpha)th quantile of T_1^2
+n1 = 25
+n2 = 100
+n3 = 25
+critical.t1 = qf(.95, 2, n1+n2-2-1)^2 *(n1+n2-2-1)/(2*(n1+n2-2))
+#critical.t1
+power.t1 = 1-pf(critical.t1, 2, n1+n2-2-1)
+#power.t1
+# compute (1-alpha)th quantile of T_2^2
+n1 = 25
+n2 = 100
+n3 = 25
+critical.t2 = qf(.95, 2, n1+n2+n3-3-1)^2 *(n1+n2-2-1)/(2*(n1+n2-2))
+#critical.t2
+power.t2 = 1-pf(critical.t2, 2, n1+n2-2-1)
+#power.t2
+```
+
+```{r, warning=FALSE, echo=FALSE, include=FALSE}
+# case ii, p=2
+# delta = 2
+ncp = t(c(sqrt(2/2),sqrt(2/2)))%*%solve(sigma.2.2)%*%c(sqrt(2/2),sqrt(2/2))
+power.new_2.t1 = 1-pf(critical.t1, 2, n1+n2-2-1, ncp = ncp)
+power.new_2.t2 = 1-pf(critical.t2, 2, n1+n2-2-1, ncp = ncp)
+# delta = 4
+ncp = t(c(sqrt(4/2),sqrt(4/2)))%*%solve(sigma.2.2)%*%c(sqrt(4/2),sqrt(4/2))
+power.new_4.t1 = 1-pf(critical.t1, 2, n1+n2-2-1, ncp = ncp)
+power.new_4.t2 = 1-pf(critical.t2, 2, n1+n2-2-1, ncp = ncp)
+# delta = 8
+ncp = t(c(sqrt(8/2),sqrt(8/2)))%*%solve(sigma.2.2)%*%c(sqrt(8/2),sqrt(8/2))
+power.new_8.t1 = 1-pf(critical.t1, 2, n1+n2-2-1, ncp = ncp)
+power.new_8.t2 = 1-pf(critical.t2, 2, n1+n2-2-1, ncp = ncp)
+# delta = 16
+ncp = t(c(sqrt(16/2),sqrt(16/2)))%*%solve(sigma.2.2)%*%c(sqrt(16/2),sqrt(16/2))
+power.new_16.t1 = 1-pf(critical.t1, 2, n1+n2-2-1, ncp = ncp)
+power.new_16.t2 = 1-pf(critical.t2, 2, n1+n2-2-1, ncp = ncp)
+
+t12.2.ii = c(power.t1, power.new_2.t1, power.new_4.t1, power.new_8.t1, power.new_16.t1)
+t22.2.ii = c(power.t2, power.new_2.t2, power.new_4.t2, power.new_8.t2, power.new_16.t2)
+```
+
+```{r, warning=FALSE, echo=FALSE}
+# case ii, p=3
+# delta = 2
+ncp = t(c(sqrt(2/3),sqrt(2/3),sqrt(2/3)))%*%solve(sigma.3.3)%*%c(sqrt(2/3),sqrt(2/3),sqrt(2/3))
+power.new_2.t1 = 1-pf(critical.t1, 2, n1+n2-2-1, ncp = ncp)
+power.new_2.t2 = 1-pf(critical.t2, 2, n1+n2-2-1, ncp = ncp)
+# delta = 4
+ncp = t(c(sqrt(4/3),sqrt(4/3),sqrt(4/3)))%*%solve(sigma.3.3)%*%c(sqrt(4/3),sqrt(4/3),sqrt(4/3))
+power.new_4.t1 = 1-pf(critical.t1, 2, n1+n2-2-1, ncp = ncp)
+power.new_4.t2 = 1-pf(critical.t2, 2, n1+n2-2-1, ncp = ncp)
+# delta = 8
+ncp = t(c(sqrt(8/3),sqrt(8/3),sqrt(8/3)))%*%solve(sigma.3.3)%*%c(sqrt(8/3),sqrt(8/3),sqrt(8/3))
+power.new_8.t1 = 1-pf(critical.t1, 2, n1+n2-2-1, ncp = ncp)
+power.new_8.t2 = 1-pf(critical.t2, 2, n1+n2-2-1, ncp = ncp)
+# delta = 16
+ncp = t(c(sqrt(16/3),sqrt(16/3),sqrt(16/3)))%*%solve(sigma.3.3)%*%c(sqrt(16/3),sqrt(16/3),sqrt(16/3))
+power.new_16.t1 = 1-pf(critical.t1, 2, n1+n2-2-1, ncp = ncp)
+power.new_16.t2 = 1-pf(critical.t2, 2, n1+n2-2-1, ncp = ncp)
+
+t12.3.ii = c(power.t1, power.new_2.t1, power.new_4.t1, power.new_8.t1, power.new_16.t1)
+t22.3.ii = c(power.t2, power.new_2.t2, power.new_4.t2, power.new_8.t2, power.new_16.t2)
+```
+
+```{r, warning=FALSE, echo=FALSE}
+# case iii
+options(digits = 2)
+# compute (1-alpha)th quantile of T_1^2
+n1 = 100
+n2 = 25
+n3 = 100
+critical.t1 = qf(.95, 2, n1+n2-2-1)^2 *(n1+n2-2-1)/(2*(n1+n2-2))
+#critical.t1
+power.t1 = 1-pf(critical.t1, 2, n1+n2-2-1)
+#power.t1
+# compute (1-alpha)th quantile of T_2^2
+n1 = 100
+n2 = 25
+n3 = 100
+critical.t2 = qf(.95, 2, n1+n2+n3-3-1)^2 *(n1+n2-2-1)/(2*(n1+n2-2))
+#critical.t2
+power.t2 = 1-pf(critical.t2, 2, n1+n2-2-1)
+#power.t2
+```
+```{r, warning=FALSE, echo=FALSE}
+# case iii, p=2
+# delta = 2
+ncp = t(c(sqrt(2/2),sqrt(2/2)))%*%solve(sigma.2.2)%*%c(sqrt(2/2),sqrt(2/2))
+power.new_2.t1 = 1-pf(critical.t1, 2, n1+n2-2-1, ncp = ncp)
+power.new_2.t2 = 1-pf(critical.t2, 2, n1+n2-2-1, ncp = ncp)
+# delta = 4
+ncp = t(c(sqrt(4/2),sqrt(4/2)))%*%solve(sigma.2.2)%*%c(sqrt(4/2),sqrt(4/2))
+power.new_4.t1 = 1-pf(critical.t1, 2, n1+n2-2-1, ncp = ncp)
+power.new_4.t2 = 1-pf(critical.t2, 2, n1+n2-2-1, ncp = ncp)
+# delta = 8
+ncp = t(c(sqrt(8/2),sqrt(8/2)))%*%solve(sigma.2.2)%*%c(sqrt(8/2),sqrt(8/2))
+power.new_8.t1 = 1-pf(critical.t1, 2, n1+n2-2-1, ncp = ncp)
+power.new_8.t2 = 1-pf(critical.t2, 2, n1+n2-2-1, ncp = ncp)
+# delta = 16
+ncp = t(c(sqrt(16/2),sqrt(16/2)))%*%solve(sigma.2.2)%*%c(sqrt(16/2),sqrt(16/2))
+power.new_16.t1 = 1-pf(critical.t1, 2, n1+n2-2-1, ncp = ncp)
+power.new_16.t2 = 1-pf(critical.t2, 2, n1+n2-2-1, ncp = ncp)
+
+t12.2.iii = c(power.t1, power.new_2.t1, power.new_4.t1, power.new_8.t1, power.new_16.t1)
+t22.2.iii = c(power.t2, power.new_2.t2, power.new_4.t2, power.new_8.t2, power.new_16.t2)
+```
+
+```{r, warning=FALSE, echo=FALSE}
+# case iii, p=3
+# delta = 2
+ncp = t(c(sqrt(2/3),sqrt(2/3),sqrt(2/3)))%*%solve(sigma.3.3)%*%c(sqrt(2/3),sqrt(2/3),sqrt(2/3))
+power.new_2.t1 = 1-pf(critical.t1, 2, n1+n2-2-1, ncp = ncp)
+power.new_2.t2 = 1-pf(critical.t2, 2, n1+n2-2-1, ncp = ncp)
+# delta = 4
+ncp = t(c(sqrt(4/3),sqrt(4/3),sqrt(4/3)))%*%solve(sigma.3.3)%*%c(sqrt(4/3),sqrt(4/3),sqrt(4/3))
+power.new_4.t1 = 1-pf(critical.t1, 2, n1+n2-2-1, ncp = ncp)
+power.new_4.t2 = 1-pf(critical.t2, 2, n1+n2-2-1, ncp = ncp)
+# delta = 8
+ncp = t(c(sqrt(8/3),sqrt(8/3),sqrt(8/3)))%*%solve(sigma.3.3)%*%c(sqrt(8/3),sqrt(8/3),sqrt(8/3))
+power.new_8.t1 = 1-pf(critical.t1, 2, n1+n2-2-1, ncp = ncp)
+power.new_8.t2 = 1-pf(critical.t2, 2, n1+n2-2-1, ncp = ncp)
+# delta = 16
+ncp = t(c(sqrt(16/3),sqrt(16/3),sqrt(16/3)))%*%solve(sigma.3.3)%*%c(sqrt(16/3),sqrt(16/3),sqrt(16/3))
+power.new_16.t1 = 1-pf(critical.t1, 2, n1+n2-2-1, ncp = ncp)
+power.new_16.t2 = 1-pf(critical.t2, 2, n1+n2-2-1, ncp = ncp)
+
+t12.3.iii = c(power.t1, power.new_2.t1, power.new_4.t1, power.new_8.t1, power.new_16.t1)
+t22.3.iii = c(power.t2, power.new_2.t2, power.new_4.t2, power.new_8.t2, power.new_16.t2)
+```
+
+```{r, warning=FALSE, echo=FALSE}
+# case iv
+options(digits = 2)
+# compute (1-alpha)th quantile of T_1^2
+n1 = 25
+n2 = 25
+n3 = 100
+critical.t1 = qf(.95, 2, n1+n2-2-1)^2 *(n1+n2-2-1)/(2*(n1+n2-2))
+#critical.t1
+power.t1 = 1-pf(critical.t1, 2, n1+n2-2-1)
+#power.t1
+# compute (1-alpha)th quantile of T_2^2
+n1 = 25
+n2 = 25
+n3 = 100
+critical.t2 = qf(.95, 2, n1+n2+n3-3-1)^2 *(n1+n2-2-1)/(2*(n1+n2-2))
+#critical.t2
+power.t2 = 1-pf(critical.t2, 2, n1+n2-2-1)
+#power.t2
+```
+```{r, warning=FALSE, echo=FALSE}
+# case iv, p=2
+# delta = 2
+ncp = t(c(sqrt(2/2),sqrt(2/2)))%*%solve(sigma.2.2)%*%c(sqrt(2/2),sqrt(2/2))
+power.new_2.t1 = 1-pf(critical.t1, 2, n1+n2-2-1, ncp = ncp)
+power.new_2.t2 = 1-pf(critical.t2, 2, n1+n2-2-1, ncp = ncp)
+# delta = 4
+ncp = t(c(sqrt(4/2),sqrt(4/2)))%*%solve(sigma.2.2)%*%c(sqrt(4/2),sqrt(4/2))
+power.new_4.t1 = 1-pf(critical.t1, 2, n1+n2-2-1, ncp = ncp)
+power.new_4.t2 = 1-pf(critical.t2, 2, n1+n2-2-1, ncp = ncp)
+# delta = 8
+ncp = t(c(sqrt(8/2),sqrt(8/2)))%*%solve(sigma.2.2)%*%c(sqrt(8/2),sqrt(8/2))
+power.new_8.t1 = 1-pf(critical.t1, 2, n1+n2-2-1, ncp = ncp)
+power.new_8.t2 = 1-pf(critical.t2, 2, n1+n2-2-1, ncp = ncp)
+# delta = 16
+ncp = t(c(sqrt(16/2),sqrt(16/2)))%*%solve(sigma.2.2)%*%c(sqrt(16/2),sqrt(16/2))
+power.new_16.t1 = 1-pf(critical.t1, 2, n1+n2-2-1, ncp = ncp)
+power.new_16.t2 = 1-pf(critical.t2, 2, n1+n2-2-1, ncp = ncp)
+
+t12.2.iv = c(power.t1, power.new_2.t1, power.new_4.t1, power.new_8.t1, power.new_16.t1)
+t22.2.iv = c(power.t2, power.new_2.t2, power.new_4.t2, power.new_8.t2, power.new_16.t2)
+```
+
+```{r, warning=FALSE, echo=FALSE}
+# case iv, p=3
+# delta = 2
+ncp = t(c(sqrt(2/3),sqrt(2/3),sqrt(2/3)))%*%solve(sigma.3.3)%*%c(sqrt(2/3),sqrt(2/3),sqrt(2/3))
+power.new_2.t1 = 1-pf(critical.t1, 2, n1+n2-2-1, ncp = ncp)
+power.new_2.t2 = 1-pf(critical.t2, 2, n1+n2-2-1, ncp = ncp)
+# delta = 4
+ncp = t(c(sqrt(4/3),sqrt(4/3),sqrt(4/3)))%*%solve(sigma.3.3)%*%c(sqrt(4/3),sqrt(4/3),sqrt(4/3))
+power.new_4.t1 = 1-pf(critical.t1, 2, n1+n2-2-1, ncp = ncp)
+power.new_4.t2 = 1-pf(critical.t2, 2, n1+n2-2-1, ncp = ncp)
+# delta = 8
+ncp = t(c(sqrt(8/3),sqrt(8/3),sqrt(8/3)))%*%solve(sigma.3.3)%*%c(sqrt(8/3),sqrt(8/3),sqrt(8/3))
+power.new_8.t1 = 1-pf(critical.t1, 2, n1+n2-2-1, ncp = ncp)
+power.new_8.t2 = 1-pf(critical.t2, 2, n1+n2-2-1, ncp = ncp)
+# delta = 16
+ncp = t(c(sqrt(16/3),sqrt(16/3),sqrt(16/3)))%*%solve(sigma.3.3)%*%c(sqrt(16/3),sqrt(16/3),sqrt(16/3))
+power.new_16.t1 = 1-pf(critical.t1, 2, n1+n2-2-1, ncp = ncp)
+power.new_16.t2 = 1-pf(critical.t2, 2, n1+n2-2-1, ncp = ncp)
+
+t12.3.iv = c(power.t1, power.new_2.t1, power.new_4.t1, power.new_8.t1, power.new_16.t1)
+t22.3.iv = c(power.t2, power.new_2.t2, power.new_4.t2, power.new_8.t2, power.new_16.t2)
+```
+
+The following displays graphically how the the empirical power computed by the power function changes as delta increases for the various sample size configurations.
+
+```{r, echo=FALSE, fig.height=6}
+par(mfrow = c(2,2))
+delta <- c(0,2,4,8,16)
+plot(delta, t12.2.i, type = "o", col="red", xlab = "delta", ylab = "power", main = "Graph 2: Sample Size \n 100, 100,100",cex.main=0.75)
+lines(t12.3.i, type = "o", col = "blue")
+lines(t22.2.i, type = "o", col = "green")
+lines(t22.3.i, type = "o", col = "black")
+legend('bottomright',cex=0.6,
+       c("T12, p=2","T12, p=3","T22, p=2","T22, p=3"),lty=1,col=c("red","blue","green","black"))
+plot(delta, t12.2.ii, type = "o", col="red", xlab = "delta", ylab = "power", main = "Graph 3: Sample Size \n 25, 100,25",cex.main=0.75)
+lines(t12.3.ii, type = "o", col = "blue")
+lines(t22.2.ii, type = "o", col = "green")
+lines(t22.3.ii, type = "o", col = "black")
+legend('bottomright',cex=0.6,
+       c("T12, p=2","T12, p=3","T22, p=2","T22, p=3"),lty=1,col=c("red","blue","green","black"))
+plot(delta, t12.2.iii, type = "o", col="red", xlab = "delta", ylab = "power", main = "Graph 4: Sample Size \n 100, 25,100",cex.main=0.75)
+lines(t12.3.iii, type = "o", col = "blue")
+lines(t22.2.iii, type = "o", col = "green")
+lines(t22.3.iii, type = "o", col = "black")
+legend('bottomright',cex=0.6,
+       c("T12, p=2","T12, p=3","T22, p=2","T22, p=3"),lty=1,col=c("red","blue","green","black"))
+plot(delta, t12.2.iv, type = "o", col="red", xlab = "delta", ylab = "power", main = "Graph 5: Sample Size \n 25, 25,100", cex.main=0.75)
+lines(t12.3.iv, type = "o", col = "blue")
+lines(t22.2.iv, type = "o", col = "green")
+lines(t22.3.iv, type = "o", col = "black")
+legend('bottomright',cex=0.6,
+       c("T12, p=2","T12, p=3","T22, p=2","T22, p=3"),lty=1,col=c("red","blue","green","black"))
+```
+
+__Results Summary:__
+The singly non central F distribution is stochastically increasing in its non-centrality parameter $\delta^2$. This highlights that as $\mu$ moves farther and farther away from $\mu_0$ (i.e., as $\delta^2$ increases and $H_0$ is rendered more and more false), Hotelling's $T^2$ test becomes more and more powerful. One can observe that when $\delta=0$ (i.e., no ncp), the power of both tests are pretty small; however, the power increases with $\delta$. In fact, the NCP parameter tells something about the statistical power of a test. When ncp=0, it means that the F distribution is a central F distribution. As the NCP increases, the shape of the F-distribution shifts to the right. This also means that a larger percentage of the curve moves to the right of the critical value for $alpha$. The result is an increase in statistical power. When p=3, one can observe that the power of $T_1^2$ increases significantly and it is the fastest among all tests. So it is fair to conclude that $T^2_1$ is the more powerful than $T^2_2$.
+
+# Part 3. Asymptotic Distributions of $T_1^2$ and $T_2^2$
+
+In this part, the impact of non-normality on the distributions of $T_1^2$ and $T_2^2$ is explored as well as the validity of the large-sample approximation of their distributions. The non-normal distributions considered are the multivariate t-distribution and the multivariate Laplace distribution, both of which belong to the family of elliptical distributions.$^1$ The multivariate t-distribution is symmetric about its mean similarly to the MVN, but it has thicker tails than the MVN distribution for small degrees of freedom, and accommodates outliers and extreme observations much better.$^1$ Similarly, the multivariate Laplace distribution is also symmetric and has thicker tails than the MVN distribution but it is similar to the MVN distribution in that it is specified by its location vector and its covariance matrix.$^1$
+
+As shown by the results to follow, the same sample size configurations, means and variance-convariance matrices that were used in previous parts are used again here. 1000 Monte Carlo repeats were also considered in this part to calculate the $T_1^2$ and $T_2^2$ statistics and their empirical distributions were examined.
+
+Large-sample approximation claims that if n is sufficiently large, then asymptotic theory can be used to obtain an asymptotic null distribution for $T^2$ to approximate its exact null distribution to be $T^2 \sim^a \chi^2_p$. This can be shown as follows.
+
+We know from part 2 that $T^2 \sim \frac{p(n-1)}{n-p}F_{p,n-p}$ and it follows that when we let $F \sim F_{p,n-p}$ we can write,
+$$
+\frac{p(n-1)}{n-p}F =^D (\frac{p(n-1)}{n-p})\frac{\chi^2_1/p}{\chi^2_2/(n-p)} = \frac{(n-1)}{(n-p)}\frac{\chi^2_1}{\chi^2_2/(n-p)}
+$$
+and by the Weak Law of Large Numbers we get,
+$$
+\frac{1}{n-p}\chi^2_2 =^D \frac{1}{n-p}\sum_{i=1}^{n-p}U_i = \bar{U} \rightarrow^p 1
+$$
+where $U_1, \dots U_{n-p} \sim^{iid} \chi^2_1$ which by Slutsky’s Theorem shows that $T^2 \sim^a \chi^2_p$ for large n as desired.$^2$ As explained in Lecture 2, slide 7, this result holds true even without the assumption of multivariate normality.$^2$ 
+
+It is because of this that when performing the following analysis, the expectation was to arrive at a distribution of the test statistics for $T_1^2$ and $T_2^2$ that is chi-squared with degrees of freedom equal to the number of parameters of the data which can be verified by checking the mean of the distributions as for chi-squared the mean is equal to the degrees of freedom.
+
+```{r, warning=FALSE, echo=FALSE, include=FALSE}
+#following part (a) step 1. mu1=mu2=0, mu3 and Sigma.
+library("EnvStats")
+#Multivariate t-distribution. p=2 - T12 Test
+tests.t12.2 <- c()
+generator.t12.2 = function(n1, n2,n3) {
+  mu1 = c(0, 0)
+  mu2 = c(0, 0)
+  sigma2 = sigma.2.2*(10-2)/10
+  set.seed(625)
+  for (i in 1:1000) {
+    x1 = rmvt(n1, 
+              sigma2,
+              df = 10)
+    x2 = rmvt(n2, 
+              sigma2,
+              df = 10)
+    x3 = rmvt(n3, 
+              sigma2,
+              df = 10)
+    S_pool.2.2 = ((n1-1)*cov(x1)+(n2-1)*cov(x2))/(n1+n2-2)
+    T1_square = (1/n1+1/n2)^(-1)*t(colMeans(x1)-colMeans(x2))%*%inv(S_pool.2.2)%*%
+      (colMeans(x1)-colMeans(x2))
+    tests.t12.2[i] = T1_square
+  }
+  return(tests.t12.2)
+}
+#Multivariate t-distribution. p=2 - T22 Test
+tests.t22.2 <- c()
+generator.t22.2 = function(n1, n2,n3) {
+  mu1 = c(0, 0)
+  mu2 = c(0, 0)
+  mu3 = c(10, 10)
+  sigma2 = sigma.2.2*(10-2)/10
+  set.seed(625)
+  for (i in 1:1000) {
+    x1 = rmvt(n1, 
+              sigma2,
+              df = 10)
+    x2 = rmvt(n2, 
+              sigma2,
+              df = 10)
+    x3 = rmvt(n3, 
+              sigma2,
+              df = 10)
+    S_pool.3.3 = ((n1-1)*cov(x1)+(n2-1)*cov(x2)+(n3-1)*cov(x3))/(n1+n2+n3-3)
+    T2_square = (1/n1+1/n2)^(-1)*t(colMeans(x1)-colMeans(x2))%*%inv(S_pool.3.3)%*%
+      (colMeans(x1)-colMeans(x2))
+    tests.t22.2[i] = T2_square
+  }
+  return(tests.t22.2)
+}
+```
+
+```{r, warning=FALSE, echo=FALSE, include=FALSE}
+#Multivariate t-distribution. p=3 - T12 Test
+tests.t12.3 <- c()
+generator.t12.3 = function(n1, n2,n3) {
+  mu1 = c(0, 0, 0)
+  mu2 = c(0, 0, 0)
+  sigma3 = sigma.3.3*(10-2)/10
+  set.seed(625)
+  for (i in 1:1000) {
+    x1 = rmvt(n1, 
+              sigma3,
+              df = 10)
+    x2 = rmvt(n2, 
+              sigma3,
+              df = 10)
+    x3 = rmvt(n3, 
+              sigma3,
+              df = 10)
+    S_pool.2.2 = ((n1-1)*cov(x1)+(n2-1)*cov(x2))/(n1+n2-2)
+    T1_square = (1/n1+1/n2)^(-1)*t(colMeans(x1)-colMeans(x2))%*%inv(S_pool.2.2)%*%
+      (colMeans(x1)-colMeans(x2))
+    tests.t12.3[i] = T1_square
+  }
+  return(tests.t12.3)
+}
+#Multivariate t-distribution. p=3 - T22 Test
+tests.t22.3 <- c()
+generator.t22.3 = function(n1, n2, n3) {
+  mu1 = c(0, 0, 0)
+  mu2 = c(0, 0, 0)
+  mu3 = c(10, 10, 10)
+  sigma3 = sigma.3.3*(10-2)/10
+  set.seed(625)
+  for (i in 1:1000) {
+    x1 = rmvt(n1, 
+              sigma3,
+              df = 10)
+    x2 = rmvt(n2, 
+              sigma3,
+              df = 10)
+    x3 = rmvt(n3, 
+              sigma3,
+              df = 10)
+    S_pool.3.3 = ((n1-1)*cov(x1)+(n2-1)*cov(x2)+(n3-1)*cov(x3))/(n1+n2+n3-3)
+    T2_square = (1/n1+1/n2)^(-1)*t(colMeans(x1)-colMeans(x2))%*%inv(S_pool.3.3)%*%
+      (colMeans(x1)-colMeans(x2))
+    T2_square.all[i] = T2_square
+    tests.t22.3[i] = T2_square
+  }
+  return(tests.t22.3)
+}
+```
+
+```{r, warning=FALSE, echo=FALSE, include=FALSE}
+#case i: $n_1=n_2=n_3$:
+cat("p=2: ")
+dist_t12.2_1 <- ecdf(generator.t12.2(100, 100,100))
+summary(dist_t12.2_1)
+dist_t22.2_1 <- ecdf(generator.t22.2(100, 100,100))
+summary(dist_t22.2_1)
+cat("p=3: ")
+dist_t12.3_1 <- ecdf(generator.t12.3(100, 100, 100))
+summary(dist_t12.3_1)
+dist_t22.3_1 <- ecdf(generator.t22.3(100, 100, 100))
+summary(dist_t22.3_1)
+```
+
+```{r, warning=FALSE, echo=FALSE, include=FALSE}
+#case ii $n_1<<n_2, n_3=n_1$:
+cat("p=2: ")
+dist_t12.2_2 <- ecdf(generator.t12.2(25, 100,25))
+summary(dist_t12.2_2)
+dist_t22.2_2 <- ecdf(generator.t22.2(25, 100,25))
+summary(dist_t22.2_2)
+cat("p=3: ")
+dist_t12.3_2 <- ecdf(generator.t12.3(25, 100,25))
+summary(dist_t12.3_2)
+dist_t22.3_2 <- ecdf(generator.t22.3(25, 100,25))
+summary(dist_t22.3_2)
+```
+
+```{r, warning=FALSE, echo=FALSE, include=FALSE}
+#case iii $n_1>>n_2, n_3=n_1$:
+cat("p=2: ")
+dist_t12.2_3 <- ecdf(generator.t12.2(100, 25,100))
+summary(dist_t12.2_3)
+dist_t22.2_3 <- ecdf(generator.t22.2(100, 25,100))
+summary(dist_t22.2_3)
+cat("p=3: ")
+dist_t12.3_3 <- ecdf(generator.t12.3(100, 25,100))
+summary(dist_t12.3_3)
+dist_t22.3_3 <- ecdf(generator.t22.3(100, 25,100))
+summary(dist_t22.3_3)
+```
+
+```{r, warning=FALSE, echo=FALSE,include=FALSE}
+#case iv $n_1=n_2=n, n_3>>n$:
+cat("p=2: ")
+dist_t12.2_4 <- ecdf(generator.t12.2(25, 25,100))
+summary(dist_t12.2_4)
+dist_t22.2_4 <- ecdf(generator.t22.2(25, 25,100))
+summary(dist_t22.2_4)
+cat("p=3: ")
+dist_t12.3_4 <- ecdf(generator.t12.3(25, 25,100))
+summary(dist_t12.3_4)
+dist_t22.3_4 <- ecdf(generator.t22.3(25, 25,100))
+summary(dist_t22.3_4)
+```
+
+## Results for Multivariate t-distribution
+
+Below are the results for the $T_1^2$ test where p = 2 and the data was generated from the multivariate t-distribution. As shown, the histograms for each sample size configuration roughly follows that expected from a chi-squared distribution as expected. The numeric summary which summarizes the empirical distributions further supports this by displaying that the means of the various sample sizes further converges to the value 2 as the sample sizes increase. This is inline with our expectations as the mean of the chi-squared distribution is equal to it's degrees of freedom which in this case is 2.
+
+```{r echo = FALSE, warning = FALSE, out.height="80%"}
+#p = 2 histrograms for Test T12
+library(knitr)
+library(kableExtra)
+par(mfrow=c(2,4))
+hist(generator.t12.2(100, 100,100), main = "Multivariate t-Test Test Statistic  \n Sample Size 100, 100,100" ,xlab ="Test Statistic",cex.main = 0.7)
+hist(generator.t12.2(25, 100,25), main = "Multivariate t-Test Test Statistic  \n Sample Size 25, 100,25" ,xlab ="Test Statistic",cex.main = 0.7)
+hist(generator.t12.2(100, 25,100), main = "Multivariate t-Test Test Statistic  \n Sample Size 100, 25,100" ,xlab ="Test Statistic",cex.main = 0.7)
+hist(generator.t12.2(25, 25,100), main = "Multivariate t-Test Test Statistic  \n Sample Size 25, 25,100" ,xlab ="Test Statistic",cex.main = 0.7)
+
+#table
+table = as.matrix(cbind(summary(dist_t12.2_1),summary(dist_t12.2_2),summary(dist_t12.2_3),summary(dist_t12.2_4)))
+knitr::kable(table, "pipe",col.names = c("Sample Size 100, 100,100","Sample Size 25, 100,25","Sample Size 100, 25,100","Sample Size 25, 25,100"))%>% 
+  kable_styling(latex_options="HOLD_position")
+```
+
+Below are the results for the $T_2^2$ test where p = 2 and the data was generated from the multivariate t-distribution. Similar to the results for the $T_1^2$ test, the histograms indicate that the expectation that the test statistics follow a chi-squared distribution is reasonable and again the means of the empirical distributions as expected converge to 2 as the sample sizes increase which is the desired result as it indicates that the large-sample approximation holds true and that the expectation that the chi-squared distribution would have degrees of freedom equal to the number of parameters is also accurate. 
+
+```{r echo = FALSE, warning = FALSE, out.height="80%"}
+#p = 2 histrograms for Test T22
+library(knitr)
+library(kableExtra)
+par(mfrow=c(2,4))
+hist(generator.t22.2(100, 100,100), main = "Multivariate t-Test Test Statistic \n Sample Size 100, 100,100" ,xlab ="Test Statistic",cex.main = 0.7)
+hist(generator.t22.2(25, 100,25), main = "Multivariate t-Test Test Statistic  \n Sample Size 25, 100,25" ,xlab ="Test Statistic",cex.main = 0.7)
+hist(generator.t22.2(100, 25,100), main = "Multivariate t-Test Test Statistic  \n Sample Size 100, 25,100" ,xlab ="Test Statistic",cex.main = 0.7)
+hist(generator.t22.2(25, 25,100), main = "Multivariate t-Test Test Statistic  \n Sample Size 25, 25,100" ,xlab ="Test Statistic",cex.main = 0.7)
+
+#table
+table = as.matrix(cbind(summary(dist_t22.2_1),summary(dist_t22.2_2),summary(dist_t22.2_3),summary(dist_t22.2_4)))
+knitr::kable(table, "pipe",col.names = c("Sample Size 100, 100,100","Sample Size 25, 100,25","Sample Size 100, 25,100","Sample Size 25, 25,100"))%>% 
+  kable_styling(latex_options="HOLD_position")
+```
+
+The summary statistics tables above display the first and the third quantiles of the test statistics generated however a more detailed comparison of the distribution's upper tails for both the $T_1^2$ and $T_2^2$ tests was also considered by generating and evaluating their 0.85th, 0.90th, 0.95th, 0.975th, 0.99th and 0.995th quantiles for each test with each sample size configuration. These results were stored in tables 54 and 55 in the appendix.
+
+Below are the results for the $T_1^2$ test where p = 3 and the data was generated from the multivariate t-distribution. Again, the histograms indicate the desired chi-squared distribution with the means in the empirical distributions summary table confirming again the expectation that the degrees of freedom of the distribution is equal to the number of parameters, in this case 3.
+
+```{r echo = FALSE, warning = FALSE, out.height="80%"}
+#p = 3 histrograms for Test T12
+par(mfrow=c(2,4))
+hist(generator.t12.3(100, 100,100), main = "Multivariate t-Test Test Statistic \n Sample Size 100, 100,100" ,xlab ="Test Statistic",cex.main = 0.7)
+hist(generator.t12.3(25, 100,25), main = "Multivariate t-Test Test Statistic  \n Sample Size 25, 100,25" ,xlab ="Test Statistic",cex.main = 0.7)
+hist(generator.t12.3(100, 25,100), main = "Multivariate t-Test Test Statistic  \n Sample Size 100, 25,100" ,xlab ="Test Statistic",cex.main = 0.7)
+hist(generator.t12.3(25, 25,100), main = "Multivariate t-Test Test Statistic  \n Sample Size 25, 25,100" ,xlab ="Test Statistic",cex.main = 0.7)
+
+#table
+table = as.matrix(cbind(summary(dist_t12.3_1),summary(dist_t12.3_2),summary(dist_t12.3_3),summary(dist_t12.3_4)))
+knitr::kable(table, "pipe",col.names = c("Sample Size 100, 100,100","Sample Size 25, 100,25","Sample Size 100, 25,100","Sample Size 25, 25,100"))%>% 
+  kable_styling(latex_options="HOLD_position")
+```
+
+Below are the results for the $T_2^2$ Test where p = 3 and the data was generated from the multivariate t-distribution. The results here are very similar to those generated with the $T_1^2$ test. When we consider the 0.85th, 0.90th, 0.95th, 0.975th, 0.99th and 0.995th quantiles for for both the $T_1^2$ and $T_2^2$ tests with each sample size configuration as shown in tables 56 and 57 in the appendix, we can see that their similarities are equally apparent there with differences in quantile values only differing by a few decimal points and the test that generates the higher quantile values is different depending on which quantile being considered. As a generalization it appears that the quantiles for the $T_1^2$ test are higher for the 0.85th, 0.90th, 0.95th and 0.99th quantiles while the $T_2^2$ test has higher quantile values for the 0.975th and 0.995th quantiles.
+
+```{r echo = FALSE, warning = FALSE, out.height="80%"}
+#p = 3 histrograms for Test T22
+par(mfrow=c(2,4))
+hist(generator.t22.3(100, 100,100), main = "Multivariate t-Test Test Statistic \n Sample Size 100, 100,100" ,xlab ="Test Statistic",cex.main = 0.7)
+hist(generator.t22.3(25, 100,25), main = "Multivariate t-Test Test Statistic \n Sample Size 25, 100,25" ,xlab ="Test Statistic",cex.main = 0.7)
+hist(generator.t22.3(100, 25,100), main = "Multivariate t-Test Test Statistic  \n Sample Size 100, 25,100" ,xlab ="Test Statistic",cex.main = 0.7)
+hist(generator.t22.3(25, 25,100), main = "Multivariate t-Test Test Statistic  \n Sample Size 25, 25,100" ,xlab ="Test Statistic",cex.main = 0.7)
+
+#table
+table = as.matrix(cbind(summary(dist_t22.3_1),summary(dist_t22.3_2),summary(dist_t22.3_3),summary(dist_t22.3_4)))
+knitr::kable(table, "pipe",col.names = c("Sample Size 100, 100,100","Sample Size 25, 100,25","Sample Size 100, 25,100","Sample Size 25, 25,100"))%>% 
+  kable_styling(latex_options="HOLD_position")
+```
+
+```{r, warning=FALSE, echo=FALSE, include=FALSE}
+#following part (a) step 1. mu1=mu2=0, mu3 and Sigma.
+#(i) Multivariate laplace distribution. p=2
+library("LaplacesDemon")
+#Multivariate laplace distribution. p=2 - T12 Test
+tests.l12.2 <- c()
+generator.l12.2 = function(n1, n2,n3) {
+  mu1 = c(0, 0)
+  mu2 = c(0, 0)
+  mu3 = c(10, 10)
+  set.seed(625)
+  for (i in 1:1000) {
+    x1 = rmvl(n = n1, mu1, sigma.2.2)
+    x2 = rmvl(n = n2, mu2, sigma.2.2)
+    x3 = rmvl(n = n3, mu3, sigma.2.2)
+    S_pool.2.2 = ((n1-1)*cov(x1)+(n2-1)*cov(x2))/(n1+n2-2)
+    T1_square = (1/n1+1/n2)^(-1)*t(colMeans(x1)-colMeans(x2))%*%inv(S_pool.2.2)%*%
+      (colMeans(x1)-colMeans(x2))
+    tests.l12.2[i] = T1_square
+  }
+  return(tests.l12.2)
+}
+#Multivariate laplace distribution. p=2 - T22 Test
+tests.l22.2 <- c()
+generator.l22.2 = function(n1, n2,n3) {
+  mu1 = c(0, 0)
+  mu2 = c(0, 0)
+  mu3 = c(10, 10)
+  set.seed(625)
+  for (i in 1:1000) {
+    x1 = rmvl(n = n1, mu1, sigma.2.2)
+    x2 = rmvl(n = n2, mu2, sigma.2.2)
+    x3 = rmvl(n = n3, mu3, sigma.2.2)
+    S_pool.3.3 = ((n1-1)*cov(x1)+(n2-1)*cov(x2)+(n3-1)*cov(x3))/(n1+n2+n3-3)
+    T2_square = (1/n1+1/n2)^(-1)*t(colMeans(x1)-colMeans(x2))%*%inv(S_pool.3.3)%*%
+      (colMeans(x1)-colMeans(x2))
+    tests.l22.2[i] = T2_square
+  }
+  return(tests.l22.2)
+}
+```
+
+```{r, warning=FALSE, echo=FALSE, include=FALSE}
+#(i) Multivariate laplace distribution. p=3
+library(QRM)
+#Multivariate t-distribution. p=3 - T12 Test
+tests.l12.3 <- c()
+sigma3 <- eigenmeth(sigma.3.3, delta = 0.00000001)
+generator.l12.3 = function(n1, n2,n3) {
+  mu1 = c(0, 0, 0)
+  mu2 = c(0, 0, 0)
+  mu3 = c(10, 10, 10)
+  set.seed(625)
+  for (i in 1:1000) {
+    x1 = rmvl(n = n1, mu1, round(sigma3, 3))
+    x2 = rmvl(n = n2,  mu2, round(sigma3, 3))
+    x3 = rmvl(n = n3,  mu3, round(sigma3, 3))
+    
+    S_pool.2.2 = ((n1-1)*cov(x1)+(n2-1)*cov(x2))/(n1+n2-2)
+    T1_square = (1/n1+1/n2)^(-1)*t(colMeans(x1)-colMeans(x2))%*%inv(S_pool.2.2)%*%
+      (colMeans(x1)-colMeans(x2))
+    tests.l12.3[i] = T1_square
+  }
+  return(tests.l12.3)
+}
+#Multivariate t-distribution. p=3 - T22 Test
+tests.l22.3 <- c()
+generator.l22.3 = function(n1, n2, n3) {
+  mu1 = c(0, 0, 0)
+  mu2 = c(0, 0, 0)
+  mu3 = c(10, 10, 10)
+  set.seed(625)
+  for (i in 1:1000) {
+    x1 = rmvl(n = n1, mu1, round(sigma3, 3))
+    x2 = rmvl(n = n2,  mu2, round(sigma3, 3))
+    x3 = rmvl(n = n3,  mu3, round(sigma3, 3))
+    
+    S_pool.3.3 = ((n1-1)*cov(x1)+(n2-1)*cov(x2)+(n3-1)*cov(x3))/(n1+n2+n3-3)
+    T2_square = (1/n1+1/n2)^(-1)*t(colMeans(x1)-colMeans(x2))%*%inv(S_pool.3.3)%*%
+      (colMeans(x1)-colMeans(x2))
+    T2_square.all[i] = T2_square
+    tests.l22.3[i] = T2_square
+  }
+  return(tests.l22.3)
+}
+```
+
+```{r, warning=FALSE, echo=FALSE, include=FALSE}
+#case i: $n_1=n_2=n_3$:
+cat("p=2: ")
+dist_l12.2_1 <- ecdf(generator.l12.2(100, 100,100))
+summary(dist_t12.2_1)
+dist_l22.2_1 <- ecdf(generator.l22.2(100, 100,100))
+generator.l22.2(100, 100,100)
+summary(dist_l22.2_1)
+cat("p=3: ")
+dist_l12.3_1 <- ecdf(generator.l12.3(100, 100, 100))
+summary(dist_l12.3_1)
+dist_l22.3_1 <- ecdf(generator.l22.3(100, 100, 100))
+summary(dist_l22.3_1)
+```
+
+
+```{r, warning=FALSE, echo=FALSE, include=FALSE}
+#case ii $n_1<<n_2, n_3=n_1$:
+cat("p=2: ")
+dist_l12.2_2 <- ecdf(generator.l12.2(25, 100,25))
+summary(dist_l12.2_2)
+dist_l22.2_2 <- ecdf(generator.l22.2(25, 100,25))
+summary(dist_l22.2_2)
+cat("p=3: ")
+dist_l12.3_2 <- ecdf(generator.l12.3(25, 100,25))
+summary(dist_l12.3_2)
+dist_l22.3_2 <- ecdf(generator.l22.3(25, 100,25))
+summary(dist_l22.3_2)
+```
+
+```{r, warning=FALSE, echo=FALSE, include=FALSE}
+#case iii $n_1>>n_2, n_3=n_1$:
+cat("p=2: ")
+dist_l12.2_3 <- ecdf(generator.l12.2(100, 25,100))
+summary(dist_l12.2_3)
+dist_l22.2_3 <- ecdf(generator.l22.2(100, 25,100))
+summary(dist_l22.2_3)
+cat("p=3: ")
+dist_l12.3_3 <- ecdf(generator.l12.3(100, 25,100))
+summary(dist_l12.3_3)
+dist_l22.3_3 <- ecdf(generator.l22.3(100, 25,100))
+summary(dist_l22.3_3)
+```
+
+```{r, warning=FALSE, echo=FALSE,include=FALSE}
+#case iv $n_1=n_2=n, n_3>>n$:
+cat("p=2: ")
+dist_l12.2_4 <- ecdf(generator.l12.2(25, 25,100))
+summary(dist_l12.2_4)
+dist_l22.2_4 <- ecdf(generator.l22.2(25, 25,100))
+summary(dist_l22.2_4)
+cat("p=3: ")
+dist_l12.3_4 <- ecdf(generator.l12.3(25, 25,100))
+summary(dist_l12.3_4)
+dist_l22.3_4 <- ecdf(generator.l22.3(25, 25,100))
+summary(dist_l22.3_4)
+```
+
+## Results for Multivariate Laplace Distribution
+
+Below are the results for the $T_1^2$ test where p = 2 and the data was generated from the multivariate Laplace distribution. As shown, much like all the results for the multivariate t-distribution generated data's test statistics, the results here with the multivariate Laplace distribution also demonstrate a chi-squared distribution in the histograms as well as the corresponding degrees of freedom of 2 as shown by the mean in the empirical distribution summary statistics table. Again, 2 is the desired degrees of freedom as it is equal to the number of parameters.
+
+```{r echo = FALSE, warning = FALSE, out.height="80%"}
+#p = 2 histrograms for Test T12
+par(mfrow=c(2,4))
+hist(generator.l12.2(100, 100,100), main = "Multivariate Laplace Test Statistic \n Sample Size 100, 100,100" ,xlab ="Test Statistic",cex.main = 0.7)
+hist(generator.l12.2(25, 100,25), main = "Multivariate Laplace Test Statistic  \n Sample Size 25, 100,25" ,xlab ="Test Statistic",cex.main = 0.7)
+hist(generator.l12.2(100, 25,100), main = "Multivariate Laplace Test Statistic \n Sample Size 100, 25,100" ,xlab ="Test Statistic",cex.main = 0.7)
+hist(generator.l12.2(25, 25,100), main = "Multivariate Laplace Test Statistic  \n Sample Size 25, 25,100",xlab ="Test Statistic",cex.main = 0.7 )
+
+#table
+table = as.matrix(cbind(summary(dist_l12.2_1),summary(dist_l12.2_2),summary(dist_l12.2_3),summary(dist_l12.2_4)))
+knitr::kable(table, "pipe",col.names = c("Sample Size 100, 100,100","Sample Size 25, 100,25","Sample Size 100, 25,100","Sample Size 25, 25,100"))%>% 
+  kable_styling(latex_options="HOLD_position")
+```
+
+Below are the results for the $T_2^2$ Test where p = 2 and the data was generated from the multivariate Laplace distribution. Similar again to the results and patterns observed with the multivariate t-distribution, the histograms display the expected chi-squared distribution and the empirical distributions means converges to 2 as the sample size increases which is again the desired result.
+
+```{r echo = FALSE, warning = FALSE, out.height="80%"}
+#p = 2 histrograms for Test T22
+par(mfrow=c(2,4))
+hist(generator.l22.2(100, 100,100), main = "Multivariate Laplace Test Statistic \n Sample Size 100, 100,100",xlab ="Test Statistic",cex.main = 0.7 )
+hist(generator.l22.2(25, 100,25), main = "Multivariate Laplace Test Statistic \n Sample Size 25, 100,25" ,xlab ="Test Statistic",cex.main = 0.7)
+hist(generator.l22.2(100, 25,100), main = "Multivariate Laplace Test Statistic \n Sample Size 100, 25,100" ,xlab ="Test Statistic",cex.main = 0.7)
+hist(generator.l22.2(25, 25,100), main = "Multivariate Laplace Test Statistic \n Sample Size 25, 25,100" ,xlab ="Test Statistic",cex.main = 0.7)
+
+#table
+table = as.matrix(cbind(summary(dist_l22.2_1),summary(dist_l22.2_2),summary(dist_l22.2_3),summary(dist_l22.2_4)))
+knitr::kable(table, "pipe",col.names = c("Sample Size 100, 100,100","Sample Size 25, 100,25","Sample Size 100, 25,100","Sample Size 25, 25,100"))%>% 
+  kable_styling(latex_options="HOLD_position")
+```
+
+As before, a more detailed comparison of the distribution's upper tails for both the $T_1^2$ and $T_2^2$ tests was also considered by generating and evaluating their 0.85th, 0.90th, 0.95th, 0.975th, 0.99th and 0.995th quantiles for each test with each sample size configuration. These results are stored in tables 58 and 59 in the appendix.
+
+Below are the results for the $T_1^2$ test where p = 3 and the data was generated from the multivariate Laplace distribution. The results follow from all the past results with histograms depicting a chi-squared distribution and the empirical distributions mean converging to the number of parameters as the sample sizes increase which is consistent with our expectations.
+
+```{r echo = FALSE, warning = FALSE, out.height="80%"}
+#p = 3 histrograms for Test T12
+par(mfrow=c(2,4))
+hist(generator.l12.3(100, 100,100), main = "Multivariate Laplace Test Statistic \n Sample Size 100, 100,100",xlab ="Test Statistic",cex.main = 0.7 )
+hist(generator.l12.3(25, 100,25), main = "Multivariate Laplace Test Statistic \n Sample Size 25, 100,25",xlab ="Test Statistic",cex.main = 0.7 )
+hist(generator.l12.3(100, 25,100), main = "Multivariate Laplace Test Statistic \n Sample Size 100, 25,100" ,xlab ="Test Statistic",cex.main = 0.7)
+hist(generator.l12.3(25, 25,100), main = "Multivariate Laplace Test Statistic  \n Sample Size 25, 25,100",xlab ="Test Statistic",cex.main = 0.7 )
+
+#table
+table = as.matrix(cbind(summary(dist_l12.3_1),summary(dist_l12.3_2),summary(dist_l12.3_3),summary(dist_l12.3_4)))
+knitr::kable(table, "pipe",col.names = c("Sample Size 100, 100,100","Sample Size 25, 100,25","Sample Size 100, 25,100","Sample Size 25, 25,100"))%>% 
+  kable_styling(latex_options="HOLD_position")
+```
+
+Below are the results for the $T_2^2$ Test where p = 3 and the data was generated from the multivariate Laplace distribution. These results follow very closely to those found with the $T_1^2$ test. A further comparison of the two sets of results was performed by considering the distribution's 0.85th, 0.90th, 0.95th, 0.975th, 0.99th and 0.995th quantiles for each test with each sample size configuration. These results are stored in tables 60 and 61 that can be found in the appendix. These results further support that the $T_1^2$ and $T_2^2$ tests are very similar for the multivariate Laplace distribution with p=3.
+
+```{r echo = FALSE, warning = FALSE, out.height="80%"}
+#p = 3 histrograms for Test T22
+par(mfrow=c(2,4))
+hist(generator.l22.3(100, 100,100), main = "Multivariate Laplace Test Statistic \n Sample Size 100, 100,100",xlab ="Test Statistic",cex.main = 0.7)
+hist(generator.l22.3(25, 100,25), main = "Multivariate Laplace Test Statistic  \n Sample Size 25, 100,25",xlab ="Test Statistic",cex.main = 0.7)
+hist(generator.l22.3(100, 25,100), main = "Multivariate Laplace Test Statistic  \n Sample Size 100, 25,100" ,xlab ="Test Statistic",cex.main = 0.7)
+hist(generator.l22.3(25, 25,100), main = "Multivariate Laplace Test Statistic \n Sample Size 25, 25,100" ,xlab ="Test Statistic",cex.main = 0.7)
+
+#table
+table = as.matrix(cbind(summary(dist_l22.3_1),summary(dist_l22.3_2),summary(dist_l22.3_3),summary(dist_l22.3_4)))
+knitr::kable(table, "pipe",col.names = c("Sample Size 100, 100,100","Sample Size 25, 100,25","Sample Size 100, 25,100","Sample Size 25, 25,100"))%>% 
+  kable_styling(latex_options="HOLD_position")
+```
+
+```{r echo=FALSE, warning=FALSE}
+########################## QUANTILES FROM PART 3 WITH MULTIVARITATE T DISTRIBUTION #########################
+#Quantiles p = 2 for Test T12 Part 3
+upper.quantile_t12.2_1 = quantile(generator.t12.2(100, 100,100)[order(generator.t12.2(100, 100,100))], c(.85,.90,.95,.975,.99,.995))
+upper.quantile_t12.2_2 = quantile(generator.t12.2(25, 100,25)[order(generator.t12.2(25, 100,25))], c(.85,.90,.95,.975,.99,.995))
+upper.quantile_t12.2_3 = quantile(generator.t12.2(100, 25,100)[order(generator.t12.2(100, 25,100))], c(.85,.90,.95,.975,.99,.995))
+upper.quantile_t12.2_4 = quantile(generator.t12.2(25, 25,100)[order(generator.t12.2(25, 25,100))], c(.85,.90,.95,.975,.99,.995))
+#Quantiles p = 2 for Test T22 Part 3
+upper.quantile_t22.2_1 = quantile(generator.t22.2(100, 100,100)[order(generator.t22.2(100, 100,100))], c(.85,.90,.95,.975,.99,.995))
+upper.quantile_t22.2_2 = quantile(generator.t22.2(25, 100,25)[order(generator.t22.2(25, 100,25))], c(.85,.90,.95,.975,.99,.995))
+upper.quantile_t22.2_3 = quantile(generator.t22.2(100, 25,100)[order(generator.t22.2(100, 25,100))], c(.85,.90,.95,.975,.99,.995))
+upper.quantile_t22.2_4 = quantile(generator.t22.2(25, 25,100)[order(generator.t22.2(25, 25,100))], c(.85,.90,.95,.975,.99,.995))
+#Quantiles p = 3 for Test T12 Part 3
+upper.quantile_t12.3_1 = quantile(generator.t12.3(100, 100,100)[order(generator.t12.3(100, 100,100))], c(.85,.90,.95,.975,.99,.995))
+upper.quantile_t12.3_2 = quantile(generator.t12.3(25, 100,25)[order(generator.t12.3(25, 100,25))], c(.85,.90,.95,.975,.99,.995))
+upper.quantile_t12.3_3 = quantile(generator.t12.3(100, 25,100)[order(generator.t12.3(100, 25,100))], c(.85,.90,.95,.975,.99,.995))
+upper.quantile_t12.3_4 = quantile(generator.t12.3(25, 25,100)[order(generator.t12.3(25, 25,100))], c(.85,.90,.95,.975,.99,.995))
+#Quantiles p = 3 for Test T22 Part 3
+upper.quantile_t22.3_1 = quantile(generator.t22.3(100, 100,100)[order(generator.t22.3(100, 100,100))], c(.85,.90,.95,.975,.99,.995))
+upper.quantile_t22.3_2 = quantile(generator.t22.3(25, 100,25)[order(generator.t22.3(25, 100,25))], c(.85,.90,.95,.975,.99,.995))
+upper.quantile_t22.3_3 = quantile(generator.t22.3(100, 25,100)[order(generator.t22.3(100, 25,100))], c(.85,.90,.95,.975,.99,.995))
+upper.quantile_t22.3_4 = quantile(generator.t22.3(25, 25,100)[order(generator.t22.3(25, 25,100))], c(.85,.90,.95,.975,.99,.995))
+```
+
+```{r echo=FALSE, warning=FALSE}
+########################## QUANTILES FROM PART 3 WITH LAPLACE DISTRIBUTION #########################
+#Quantiles p = 2 for Test T12 Part 3
+upper.quantile_l12.2_1 = quantile(generator.l12.2(100, 100,100)[order(generator.l12.2(100, 100,100))], c(.85,.90,.95,.975,.99,.995))
+upper.quantile_l12.2_2 = quantile(generator.l12.2(25, 100,25)[order(generator.l12.2(25, 100,25))], c(.85,.90,.95,.975,.99,.995))
+upper.quantile_l12.2_3 = quantile(generator.l12.2(100, 25,100)[order(generator.l12.2(100, 25,100))], c(.85,.90,.95,.975,.99,.995))
+upper.quantile_l12.2_4 = quantile(generator.l12.2(25, 25,100)[order(generator.l12.2(25, 25,100))], c(.85,.90,.95,.975,.99,.995))
+#Quantiles p = 2 for Test T22 Part 3
+upper.quantile_l22.2_1 = quantile(generator.l22.2(100, 100,100)[order(generator.l22.2(100, 100,100))], c(.85,.90,.95,.975,.99,.995))
+upper.quantile_l22.2_2 = quantile(generator.l22.2(25, 100,25)[order(generator.l22.2(25, 100,25))], c(.85,.90,.95,.975,.99,.995))
+upper.quantile_l22.2_3 = quantile(generator.l22.2(100, 25,100)[order(generator.l22.2(100, 25,100))], c(.85,.90,.95,.975,.99,.995))
+upper.quantile_l22.2_4 = quantile(generator.l22.2(25, 25,100)[order(generator.l22.2(25, 25,100))], c(.85,.90,.95,.975,.99,.995))
+#Quantiles p = 3 for Test T12 Part 3
+upper.quantile_l12.3_1 = quantile(generator.l12.3(100, 100,100)[order(generator.l12.3(100, 100,100))], c(.85,.90,.95,.975,.99,.995))
+upper.quantile_l12.3_2 = quantile(generator.l12.3(25, 100,25)[order(generator.l12.3(25, 100,25))], c(.85,.90,.95,.975,.99,.995))
+upper.quantile_l12.3_3 = quantile(generator.l12.3(100, 25,100)[order(generator.l12.3(100, 25,100))], c(.85,.90,.95,.975,.99,.995))
+upper.quantile_l12.3_4 = quantile(generator.l12.3(25, 25,100)[order(generator.l12.3(25, 25,100))], c(.85,.90,.95,.975,.99,.995))
+#Quantiles p = 3 for Test T22 Part 3
+upper.quantile_l22.3_1 = quantile(generator.l22.3(100, 100,100)[order(generator.l22.3(100, 100,100))], c(.85,.90,.95,.975,.99,.995))
+upper.quantile_l22.3_2 = quantile(generator.l22.3(25, 100,25)[order(generator.l22.3(25, 100,25))], c(.85,.90,.95,.975,.99,.995))
+upper.quantile_l22.3_3 = quantile(generator.l22.3(100, 25,100)[order(generator.l22.3(100, 25,100))], c(.85,.90,.95,.975,.99,.995))
+upper.quantile_l22.3_4 = quantile(generator.l22.3(25, 25,100)[order(generator.l22.3(25, 25,100))], c(.85,.90,.95,.975,.99,.995))
+```
+
+__Results Summary:__
+In summary, all of the generated test statistic results were in line with our expectations, each showing a chi-squared distribution with degrees of freedom that converges to the number of parameters as sample size increases. The performance of each of these multivariate non-normal datasets along with the performance multivariate normal datasets are furthur evaluated and compared in Part 4 below.
+
+# Part 4. Performance Measure to Evaluate the Asymptotic Approximation
+
+$$bias(\hat{q_h})=\hat{q_h}-q_h \text{ and } RB(\hat{q_h})=\frac{bias(\hat{q_h})}{q_h} \times 100$$
+Below is a summary of the bias and relative bias results for the $T_1^2$ test where p = 2 and the data was generated from the multivariate normal distribution. The equivalent table for where p = 3 can be found in the appendix as Table 57.
+```{r,echo = FALSE, warning = FALSE}
+#MVN
+# CASE 1
+s = qchisq(c(.85,.90,.95,.975,.99,.995), df = 2)
+bias_n12.2_1 = upper.quantile_t12_1.1 - s
+RB_n12.2_1 = bias_n12.2_1 / s * 100
+# CASE 2
+bias_n12.2_2 = upper.quantile_t12_2.1 - s
+RB_n12.2_2 = bias_n12.2_2 / s * 100
+# CASE 3
+bias_n12.2_3 = upper.quantile_t12_3.1 - s
+RB_n12.2_3 = bias_n12.2_3 / s * 100
+# CASE 4
+bias_n12.2_4 = upper.quantile_t12_4.1 - s
+RB_n12.2_4 = bias_n12.2_4 / s * 100
+
+table <- cbind(bias_n12.2_1,RB_n12.2_1,
+               bias_n12.2_2,RB_n12.2_2,
+               bias_n12.2_3,RB_n12.2_3,
+               bias_n12.2_4,RB_n12.2_4)
+knitr::kable(table, col.names = c("Bias","RB","Bias","RB","Bias","RB","Bias","RB"), caption = "Bias and RB for $T_1^2$ Test where p = 2 for Multivariate Normal Distribution") %>%
+  add_header_above(c(" " = 1, "Sample Size 100, 100,100" = 2, "Sample Size 25, 100, 25" = 2, "Sample Size 100, 25, 100" = 2,"Sample Size 25, 25, 100" = 2)) %>% 
+  kable_styling(latex_options="HOLD_position")
+```
+
+```{r,echo = FALSE, warning = FALSE}
+# CASE 1
+s = qchisq(c(.85,.90,.95,.975,.99,.995), df = 3)
+bias_n12.3_1 = upper.quantile_t12_1.2 - s
+RB_n12.3_1 = bias_n12.3_1 / s * 100
+# CASE 2
+bias_n12.3_2 = upper.quantile_t12_2.2 - s
+RB_n12.3_2 = bias_n12.3_2 / s * 100
+# CASE 3
+bias_n12.3_3 = upper.quantile_t12_3.2- s
+RB_n12.3_3 = bias_n12.3_3 /s * 100
+# CASE 4
+bias_n12.3_4 = upper.quantile_t12_4.2- s
+RB_n12.3_4 = bias_n12.3_4 / s* 100
+```
+
+Below is a summary of the bias and relative bias results for the $T_2^2$ test where p = 2 and the data was generated from the multivariate normal distribution. The equivalent table for where p = 3 can be found in the appendix as Table 58.
+
+```{r,echo = FALSE, warning = FALSE}
+# CASE 1
+s = qchisq(c(.85,.90,.95,.975,.99,.995), df = 2)
+bias_n22.2_1 = upper.quantile_t22_1.1- s
+RB_n22.2_1 = bias_n22.2_1 / s * 100
+# CASE 2
+bias_n22.2_2 = upper.quantile_t22_2.1 - s
+RB_n22.2_2 = bias_n22.2_2 / s * 100
+# CASE 3
+bias_n22.2_3 = upper.quantile_t22_3.1- s
+RB_n22.2_3 = bias_n22.2_3 / s * 100
+# CASE 4
+bias_n22.2_4 = upper.quantile_t22_4.1 - s
+RB_n22.2_4 = bias_n22.2_4 / s * 100
+
+table <- cbind(bias_n22.2_1,RB_n22.2_1,
+               bias_n22.2_2,RB_n22.2_2,
+               bias_n22.2_3,RB_n22.2_3,
+               bias_n22.2_4,RB_n22.2_4)
+knitr::kable(table, col.names = c("Bias","RB","Bias","RB","Bias","RB","Bias","RB"), caption = "Bias and RB for $T_2^2$ Test where p = 2 for Multivariate Normal Distribution") %>%
+  add_header_above(c(" " = 1, "Sample Size 100, 100,100" = 2, "Sample Size 25, 100, 25" = 2, "Sample Size 100, 25, 100" = 2,"Sample Size 25, 25, 100" = 2)) %>% 
+  kable_styling(latex_options="HOLD_position")
+```
+
+```{r,echo = FALSE, warning = FALSE}
+# CASE 1
+s = qchisq(c(.85,.90,.95,.975,.99,.995), df = 3)
+bias_n22.3_1 = upper.quantile_t22_1.2 - s
+RB_n22.3_1 = bias_n22.3_1 / s * 100
+# CASE 2
+bias_n22.3_2 = upper.quantile_t22_2.2 - s
+RB_n22.3_2 = bias_n22.3_2 / s * 100
+# CASE 3
+bias_n22.3_3 = upper.quantile_t22_3.2 - s
+RB_n22.3_3 = bias_n22.3_3 / s * 100
+# CASE 4
+bias_n22.3_4 = upper.quantile_t22_4.2 - s
+RB_n22.3_4 = bias_n22.3_4 / s * 100
+```
+
+Below is a summary of the bias and relative bias results for the $T_1^2$ test where p = 2 and the data was generated from the multivariate t-distribution. The equivalent table for where p = 3 can be found in the appendix as Table 59.
+```{r,echo = FALSE, warning = FALSE}
+# CASE 1
+s = qchisq(c(.85,.90,.95,.975,.99,.995), df = 2)
+bias_t12.2_1 = upper.quantile_t12.2_1 - s
+RB_t12.2_1 = bias_t12.2_1 / s * 100
+# CASE 2
+bias_t12.2_2 = upper.quantile_t12.2_2 - s
+RB_t12.2_2 = bias_t12.2_2 / s * 100
+# CASE 3
+bias_t12.2_3 = upper.quantile_t12.2_3 - s
+RB_t12.2_3 = bias_t12.2_3 / s * 100
+# CASE 4
+bias_t12.2_4 = upper.quantile_t12.2_4 - s
+RB_t12.2_4 = bias_t12.2_4 / s * 100
+
+table <- cbind(bias_t12.2_1,RB_t12.2_1,
+               bias_t12.2_2,RB_t12.2_2,
+               bias_t12.2_3,RB_t12.2_3,
+               bias_t12.2_4,RB_t12.2_4)
+knitr::kable(table, col.names = c("Bias","RB","Bias","RB","Bias","RB","Bias","RB"), caption = "Bias and RB for $T_1^2$ Test where p = 2 for Multivariate T Distribution") %>%
+  add_header_above(c(" " = 1, "Sample Size 100, 100,100" = 2, "Sample Size 25, 100, 25" = 2, "Sample Size 100, 25, 100" = 2,"Sample Size 25, 25, 100" = 2)) %>% 
+  kable_styling(latex_options="HOLD_position")
+```
+
+```{r,echo = FALSE, warning = FALSE}
+# CASE 1
+s = qchisq(c(.85,.90,.95,.975,.99,.995), df = 3)
+bias_t12.3_1 = upper.quantile_t12.3_1 - s
+RB_t12.3_1 = bias_t12.3_1 / s * 100
+# CASE 2
+bias_t12.3_2 = upper.quantile_t12.3_2 - s
+RB_t12.3_2 = bias_t12.3_2 / s * 100
+# CASE 3
+bias_t12.3_3 = upper.quantile_t12.3_3 - s
+RB_t12.3_3 = bias_t12.3_3 /s * 100
+# CASE 4
+bias_t12.3_4 = upper.quantile_t12.3_4 - s
+RB_t12.3_4 = bias_t12.3_4 / s* 100
+```
+
+Below is a summary of the bias and relative bias results for the $T_2^2$ test where p = 2 and the data was generated from the multivariate t-distribution. The equivalent table for where p = 3 can be found in the appendix as Table 60.
+```{r,echo = FALSE, warning = FALSE}
+# CASE 1
+s = qchisq(c(.85,.90,.95,.975,.99,.995), df = 2)
+bias_t22.2_1 = upper.quantile_t22.2_1 - s
+RB_t22.2_1 = bias_t22.2_1 / s * 100
+# CASE 2
+bias_t22.2_2 = upper.quantile_t22.2_2 - s
+RB_t22.2_2 = bias_t22.2_2 / s * 100
+# CASE 3
+bias_t22.2_3 = upper.quantile_t22.2_3 - s
+RB_t22.2_3 = bias_t22.2_3 / s * 100
+# CASE 4
+bias_t22.2_4 = upper.quantile_t22.2_4 - s
+RB_t22.2_4 = bias_t22.2_4 / s * 100
+
+table <- cbind(bias_t22.2_1,RB_t22.2_1,
+               bias_t22.2_2,RB_t22.2_2,
+               bias_t22.2_3,RB_t22.2_3,
+               bias_t22.2_4,RB_t22.2_4)
+knitr::kable(table, col.names = c("Bias","RB","Bias","RB","Bias","RB","Bias","RB"), caption = "Bias and RB for $T_2^2$ Test where p = 2 for Multivariate T Distribution") %>%
+  add_header_above(c(" " = 1, "Sample Size 100, 100,100" = 2, "Sample Size 25, 100, 25" = 2, "Sample Size 100, 25, 100" = 2,"Sample Size 25, 25, 100" = 2)) %>% 
+  kable_styling(latex_options="HOLD_position")
+```
+
+```{r,echo = FALSE, warning = FALSE}
+# CASE 1
+s = qchisq(c(.85,.90,.95,.975,.99,.995), df = 3)
+bias_t22.3_1 = upper.quantile_t22.3_1 - s
+RB_t22.3_1 = bias_t22.3_1 / s * 100
+# CASE 2
+bias_t22.3_2 = upper.quantile_t22.3_2 - s
+RB_t22.3_2 = bias_t22.3_2 / s * 100
+# CASE 3
+bias_t22.3_3 = upper.quantile_t22.3_3 - s
+RB_t22.3_3 = bias_t22.3_3 / s * 100
+# CASE 4
+bias_t22.3_4 = upper.quantile_t22.3_4 - s
+RB_t22.3_4 = bias_t22.3_4 / s * 100
+```
+
+Below is a summary of the bias and relative bias results for the $T_1^2$ test where p = 2 and the data was generated from the multivariate Laplace distribution. The equivalent table for where p = 3 can be found in the appendix as Table 61.
+```{r,echo = FALSE, warning = FALSE}
+# CASE 1
+s = qchisq(c(.85,.90,.95,.975,.99,.995), df = 2)
+bias_l12.2_1 = upper.quantile_l12.2_1 - s
+RB_l12.2_1 = bias_l12.2_1 / s * 100
+# CASE 2
+bias_l12.2_2 = upper.quantile_l12.2_2 - s
+RB_l12.2_2 = bias_l12.2_2 / s * 100
+# CASE 3
+bias_l12.2_3 = upper.quantile_l12.2_3 - s
+RB_l12.2_3 = bias_l12.2_3 / s * 100
+# CASE 4
+bias_l12.2_4 = upper.quantile_l12.2_4 - s
+RB_l12.2_4 = bias_l12.2_4 / s * 100
+
+table <- cbind(bias_l12.2_1,RB_l12.2_1,
+               bias_l12.2_2,RB_l12.2_2,
+               bias_l12.2_3,RB_l12.2_3,
+               bias_l12.2_4,RB_l12.2_4)
+knitr::kable(table, col.names = c("Bias","RB","Bias","RB","Bias","RB","Bias","RB"), caption = "Bias and RB for $T_1^2$ Test where p = 2 for Multivariate Laplace Distribution") %>%
+  add_header_above(c(" " = 1, "Sample Size 100, 100,100" = 2, "Sample Size 25, 100, 25" = 2, "Sample Size 100, 25, 100" = 2,"Sample Size 25, 25, 100" = 2)) %>% 
+  kable_styling(latex_options="HOLD_position")
+```
+
+```{r,echo = FALSE, warning = FALSE}
+# CASE 1
+s = qchisq(c(.85,.90,.95,.975,.99,.995), df = 3)
+bias_l12.3_1 = upper.quantile_l12.3_1 - s
+RB_l12.3_1 = bias_l12.3_1 / s
+# CASE 2
+bias_l12.3_2 = upper.quantile_l12.3_2 - s
+RB_l12.3_2 = bias_l12.3_2 / s * 100
+# CASE 3
+bias_l12.3_3 = upper.quantile_l12.3_3 - s
+RB_l12.3_3 = bias_l12.3_3 / s* 100
+# CASE 4
+bias_l12.3_4 = upper.quantile_l12.3_4 - s
+RB_l12.3_4 = bias_l12.3_4 / s * 100
+```
+
+Below is a summary of the bias and relative bias results for the $T_2^2$ test where p = 2 and the data was generated from the multivariate Laplace distribution. The equivalent table for where p = 3 can be found in the appendix as Table 62.
+```{r,echo = FALSE, warning = FALSE}
+# Use Multivariate Laplace distribution for asymptotic approximation. Below are the bias results for $T_2^2$ Test where p = 2
+# CASE 1
+s = qchisq(c(.85,.90,.95,.975,.99,.995), df = 2)
+bias_l22.2_1 = upper.quantile_l22.2_1 - s
+RB_l22.2_1 = bias_l22.2_1 / s * 100
+# CASE 2
+bias_l22.2_2 = upper.quantile_l22.2_2 - s
+RB_l22.2_2 = bias_l22.2_2 / s * 100
+# CASE 3
+bias_l22.2_3 = upper.quantile_l22.2_3 -s
+RB_l22.2_3 = bias_l22.2_3 / s* 100
+# CASE 4
+bias_l22.2_4 = upper.quantile_l22.2_4 - s
+RB_l22.2_4 = bias_l22.2_4 / s * 100
+
+table <- cbind(bias_l22.2_1,RB_l22.2_1,
+               bias_l22.2_2,RB_l22.2_2,
+               bias_l22.2_3,RB_l22.2_3,
+               bias_l22.2_4,RB_l22.2_4)
+knitr::kable(table, col.names = c("Bias","RB","Bias","RB","Bias","RB","Bias","RB"), caption = "Bias and RB for $T_2^2$ Test where p = 2 for Multivariate Laplace Distribution") %>%
+  add_header_above(c(" " = 1, "Sample Size 100, 100,100" = 2, "Sample Size 25, 100, 25" = 2, "Sample Size 100, 25, 100" = 2,"Sample Size 25, 25, 100" = 2)) %>% 
+  kable_styling(latex_options="HOLD_position")
+```
+
+```{r,echo = FALSE, warning = FALSE}
+# Use Multivariate Laplace distribution for asymptotic approximation. Below are the bias results for $T_2^2$ Test where p = 3.
+# CASE 1
+s = qchisq(c(.85,.90,.95,.975,.99,.995), df = 3)
+bias_l22.3_1 = upper.quantile_l22.3_1 - s
+RB_l22.3_1 = bias_l22.3_1 / s * 100
+# CASE 2
+bias_l22.3_2 = upper.quantile_l22.3_2 - s
+RB_l22.3_2 = bias_l22.3_2 / s* 100
+# CASE 3
+bias_l22.3_3 = upper.quantile_l22.3_3 - s
+RB_l22.3_3 = bias_l22.3_3 / s * 100
+# CASE 4
+bias_l22.3_4 = upper.quantile_l22.3_4 - s
+RB_l22.3_4 = bias_l22.3_4 / s * 100
+```
+
+__Results Summary:__
+As the asymptotic theory states, if the sample size increases, one can observe that the asymptotic null distribution of $T_1^2$ and the distribution of $T^2_2$ approximate its exact null distribution, this result, $T^2 \sim \chi^2_p$, was confirmed in Part 3. In terms of the tables shown above, it is observed that the multivariate Laplace distribution generated the smallest quantile bias', the multivariate normal distribution generated the second smallest quantile bias' and the multivariate T-distribution generated the largest quantile bias'. That said, each of these distributions still generated reasonably favorable results by achieving a distribution that roughly followed a chi-squared distribution with degrees of freedom equal to the number of parameters. It is worth nothing that achieving any unbiased results was not an objective of this analysis as only relatively small sizes with only 1000 Monte Carlo Simulation Repeats (R=1000) were considered and performed. Ideally, increasing the number of repeats and increasing the sample sizes should help get more accurate results for each of the distributions considered to generate the data.
+
+\pagebreak
+
+# References
+
+1. De Leon, A. (n.d.). Project Description and Due Date. Lecture. https://d2l.ucalgary.ca/d2l/le/content/468188/viewContent/5620262/View
+2. De Leon, A. (n.d.). Lecture 2. Lecture. https://d2l.ucalgary.ca/d2l/le/content/468188/viewContent/5566203/View
+3. Stephanie. (2021, May 28). Non centrality parameter (NCP). Statistics How To. Retrieved December 21, 2022, from https://www.statisticshowto.com/non-centrality-parameter-ncp/ 
+
+\pagebreak 
+
+# Appendix
+
+## Additional Tables
+
+## Tables from Part 1 {.unlisted .unnumbered}
+
+```{r echo=FALSE, warning=FALSE}
+########################## QUANTILE TABLES FROM PART 1 #########################
+#Quantiles for p=2 - T_1^2 Test
+table <- cbind(upper.quantile_t12_1.1,upper.quantile_t12_2.1,upper.quantile_t12_3.1,upper.quantile_t12_4.1)
+knitr::kable(table, col.names = c("Sample Size 100, 100,100","Sample Size 25, 100,25","Sample Size 100, 25,100","Sample Size 25, 25,100"), caption = "Part 1: Upper Quantiles for $T_1^2$ Test where p = 2") %>% 
+  kable_styling(latex_options="HOLD_position")
+
+#Quantiles for p=2 - T_2^2 Test
+table <- cbind(upper.quantile_t22_1.1,upper.quantile_t22_2.1,upper.quantile_t22_3.1,upper.quantile_t22_4.1)
+knitr::kable(table, col.names = c("Sample Size 100, 100,100","Sample Size 25, 100,25","Sample Size 100, 25,100","Sample Size 25, 25,100"), caption = "Part 1: Upper Quantiles for $T_2^2$ Test where p = 2") %>% 
+  kable_styling(latex_options="HOLD_position")
+
+#Quantiles for p=3 for T_1^2 test
+table <- cbind(upper.quantile_t12_1.2,upper.quantile_t12_2.2,upper.quantile_t12_3.2,upper.quantile_t12_4.2)
+knitr::kable(table, col.names = c("Sample Size 100, 100,100","Sample Size 25, 100,25","Sample Size 100, 25,100","Sample Size 25, 25,100"), caption = "Part 1: Upper Quantiles for $T_1^2$ Test where p = 3") %>% 
+  kable_styling(latex_options="HOLD_position")
+
+#Quantiles for p=3 for T_1^2 test
+table <- cbind(upper.quantile_t22_1.2,upper.quantile_t22_2.2,upper.quantile_t22_3.2,upper.quantile_t22_4.2)
+knitr::kable(table, col.names = c("Sample Size 100, 100,100","Sample Size 25, 100,25","Sample Size 100, 25,100","Sample Size 25, 25,100"), caption = "Part 1: Upper Quantiles for $T_2^2$ Test where p = 3") %>% 
+  kable_styling(latex_options="HOLD_position")
+```
+
+## Tables from Part 2  {.unlisted .unnumbered}
+
+```{r echo=FALSE, warning=FALSE}
+########################## TEST SUMMARY TABLES FROM PART 2 FOR P=2 #########################
+#summary table for p =2 and delta = 2 t12
+table <- cbind(delta2.rejects_t2_1.1[1:3],delta2.rejects_t2_2.1[1:3],delta2.rejects_t2_3.1[1:3],delta2.rejects_t2_4.1[1:3])
+rownames(table) <- c("T12 Test Rejects", "T12 Test Not Rejects", "T12 Test Empirical Power")
+knitr::kable(table, col.names = c("Sample Size 100, 100,100","Sample Size 25, 100,25","Sample Size 100, 25,100","Sample Size 25, 25,100"), caption = "Test Results for T12 Test where p = 2 and delta = 2") %>% 
+  kable_styling(latex_options=c("scale_down", "HOLD_position"))
+
+#summary table for p =2 and delta = 2 t22
+table <- cbind(delta2.rejects_t2_1.1[4:6],delta2.rejects_t2_2.1[4:6],delta2.rejects_t2_3.1[4:6],delta2.rejects_t2_4.1[4:6])
+rownames(table) <- c("T22 Test Rejects", "T22 Test Not Rejects", "T22 Test Empirical Power")
+knitr::kable(table, col.names = c("Sample Size 100, 100,100","Sample Size 25, 100,25","Sample Size 100, 25,100","Sample Size 25, 25,100"), caption = "Test Results for T22 Test where p = 2 and delta = 2") %>% 
+  kable_styling(latex_options=c("scale_down", "HOLD_position"))
+
+#summary table for p =2 and delta = 4 t12
+table <- cbind(delta4.rejects_t2_1.1[1:3],delta4.rejects_t2_2.1[1:3],delta4.rejects_t2_3.1[1:3],delta4.rejects_t2_4.1[1:3])
+rownames(table) <- c("T12 Test Rejects", "T12 Test Not Rejects", "T12 Test Empirical Power")
+knitr::kable(table, col.names = c("Sample Size 100, 100,100","Sample Size 25, 100,25","Sample Size 100, 25,100","Sample Size 25, 25,100"), caption = "Test Results for T12 Test where p = 2 and delta = 4") %>% 
+  kable_styling(latex_options=c("scale_down", "HOLD_position"))
+
+#summary table for p =2 and delta = 4 t22
+table <- cbind(delta4.rejects_t2_1.1[4:6],delta4.rejects_t2_2.1[4:6],delta4.rejects_t2_3.1[4:6],delta4.rejects_t2_4.1[4:6])
+rownames(table) <- c("T22 Test Rejects", "T22 Test Not Rejects", "T22 Test Empirical Power")
+knitr::kable(table, col.names = c("Sample Size 100, 100,100","Sample Size 25, 100,25","Sample Size 100, 25,100","Sample Size 25, 25,100"), caption = "Test Results for T22 Test where p = 2 and delta = 4") %>% 
+  kable_styling(latex_options=c("scale_down", "HOLD_position"))
+
+#summary table for p =2 and delta = 8 t12
+table <- cbind(delta8.rejects_t2_1.1[1:3],delta8.rejects_t2_2.1[1:3],delta8.rejects_t2_3.1[1:3],delta8.rejects_t2_4.1[1:3])
+rownames(table) <- c("T12 Test Rejects", "T12 Test Not Rejects", "T12 Test Empirical Power")
+knitr::kable(table, col.names = c("Sample Size 100, 100,100","Sample Size 25, 100,25","Sample Size 100, 25,100","Sample Size 25, 25,100"), caption = "Test Results for T12 Test where p = 2 and delta = 8") %>% 
+  kable_styling(latex_options=c("scale_down", "HOLD_position"))
+
+#summary table for p =2 and delta = 8 t22
+table <- cbind(delta8.rejects_t2_1.1[4:6],delta8.rejects_t2_2.1[4:6],delta8.rejects_t2_3.1[4:6],delta8.rejects_t2_4.1[4:6])
+rownames(table) <- c("T22 Test Rejects", "T22 Test Not Rejects", "T22 Test Empirical Power")
+knitr::kable(table, col.names = c("Sample Size 100, 100,100","Sample Size 25, 100,25","Sample Size 100, 25,100","Sample Size 25, 25,100"), caption = "Test Results for T22 Test where p = 2 and delta = 8") %>% 
+  kable_styling(latex_options=c("scale_down", "HOLD_position"))
+
+#summary table for p =2 and delta = 16 t12
+table <- cbind(delta16.rejects_t2_1.1[1:3],delta16.rejects_t2_2.1[1:3],delta16.rejects_t2_3.1[1:3],delta16.rejects_t2_4.1[1:3])
+rownames(table) <- c("T12 Test Rejects", "T12 Test Not Rejects", "T12 Test Empirical Power")
+knitr::kable(table, col.names = c("Sample Size 100, 100,100","Sample Size 25, 100,25","Sample Size 100, 25,100","Sample Size 25, 25,100"), caption = "Test Results for T12 Test where p = 2 and delta = 16") %>% 
+  kable_styling(latex_options=c("scale_down", "HOLD_position"))
+
+#summary table for p =2 and delta = 16 t22
+table <- cbind(delta16.rejects_t2_1.1[4:6],delta16.rejects_t2_2.1[4:6],delta16.rejects_t2_3.1[4:6],delta16.rejects_t2_4.1[4:6])
+rownames(table) <- c("T22 Test Rejects", "T22 Test Not Rejects", "T22 Test Empirical Power")
+knitr::kable(table, col.names = c("Sample Size 100, 100,100","Sample Size 25, 100,25","Sample Size 100, 25,100","Sample Size 25, 25,100"), caption = "Test Results for T22 Test where p = 2 and delta = 16") %>% 
+  kable_styling(latex_options=c("scale_down", "HOLD_position"))
+```
+```{r echo=FALSE, warning=FALSE}
+########################## QUANTILE TABLES FROM PART 2 WHERE P = 2, DELTA = 2 #########################
+#Quantiles for p=2 - T_1^2 Test, delta = 2
+table <- cbind(delta2.upper.quantile_t12_1.1,delta2.upper.quantile_t12_2.1,delta2.upper.quantile_t12_3.1,delta2.upper.quantile_t12_4.1)
+knitr::kable(table, col.names = c("Sample Size 100, 100,100","Sample Size 25, 100,25","Sample Size 100, 25,100","Sample Size 25, 25,100"), caption = "Upper Quantiles for T122 Test where p = 2 and delta = 2") %>% 
+  kable_styling(latex_options="HOLD_position")
+```
+```{r echo=FALSE}
+#Quantiles for p=2 - T_2^2 Test, delta = 2
+table <- cbind(delta2.upper.quantile_t22_1.1,delta2.upper.quantile_t22_2.1,delta2.upper.quantile_t22_3.1,delta2.upper.quantile_t22_4.1)
+knitr::kable(table, col.names = c("Sample Size 100, 100,100","Sample Size 25, 100,25","Sample Size 100, 25,100","Sample Size 25, 25,100"), caption = "Upper Quantiles for T22 Test where p = 2 and delta =2") %>% 
+  kable_styling(latex_options="HOLD_position")
+```
+```{r echo=FALSE, warning=FALSE}
+########################## TEST SUMMARY TABLES FROM PART 2 FOR P=3 #########################
+#summary table for p =3 and delta = 2 for t12
+table <- cbind(delta2.rejects_t2_1.2[1:3],delta2.rejects_t2_2.2[1:3],delta2.rejects_t2_3.2[1:3],delta2.rejects_t2_4.2[1:3])
+rownames(table) <- c("T12 Test Rejects", "T12 Test Not Rejects", "T12 Test Empirical Power")
+knitr::kable(table, col.names = c("Sample Size 100, 100,100","Sample Size 25, 100,25","Sample Size 100, 25,100","Sample Size 25, 25,100"), caption = "Test Results for T12 Test where p = 3 and delta = 2") %>% 
+  kable_styling(latex_options=c("scale_down", "HOLD_position"))
+
+#summary table for p =3 and delta = 2 for t22
+table <- cbind(delta2.rejects_t2_1.2[4:6],delta2.rejects_t2_2.2[4:6],delta2.rejects_t2_3.2[4:6],delta2.rejects_t2_4.2[4:6])
+rownames(table) <- c("T22 Test Rejects", "T22 Test Not Rejects", "T22 Test Empirical Power")
+knitr::kable(table, col.names = c("Sample Size 100, 100,100","Sample Size 25, 100,25","Sample Size 100, 25,100","Sample Size 25, 25,100"), caption = "Test Results for T22 Test where p = 3 and delta = 2") %>% 
+  kable_styling(latex_options=c("scale_down", "HOLD_position"))
+
+#summary table for p =3 and delta = 4 for t12
+table <- cbind(delta4.rejects_t2_1.2[1:3],delta4.rejects_t2_2.2[1:3],delta4.rejects_t2_3.2[1:3],delta4.rejects_t2_4.2[1:3])
+rownames(table) <- c("T12 Test Rejects", "T12 Test Not Rejects", "T12 Test Empirical Power")
+knitr::kable(table, col.names = c("Sample Size 100, 100,100","Sample Size 25, 100,25","Sample Size 100, 25,100","Sample Size 25, 25,100"), caption = "Test Results for T12 Test where p = 3 and delta = 4") %>% 
+  kable_styling(latex_options=c("scale_down", "HOLD_position"))
+
+#summary table for p =3 and delta = 4 for t22
+table <- cbind(delta4.rejects_t2_1.2[4:6],delta4.rejects_t2_2.2[4:6],delta4.rejects_t2_3.2[4:6],delta4.rejects_t2_4.2[4:6])
+rownames(table) <- c("T22 Test Rejects", "T22 Test Not Rejects", "T22 Test Empirical Power")
+knitr::kable(table, col.names = c("Sample Size 100, 100,100","Sample Size 25, 100,25","Sample Size 100, 25,100","Sample Size 25, 25,100"), caption = "Test Results for T22 Test where p = 3 and delta = 4") %>% 
+  kable_styling(latex_options=c("scale_down", "HOLD_position"))
+
+#summary table for p =3 and delta = 8 for t12
+table <- cbind(delta8.rejects_t2_1.2[1:3],delta8.rejects_t2_2.2[1:3],delta8.rejects_t2_3.2[1:3],delta8.rejects_t2_4.2[1:3])
+rownames(table) <- c("T12 Test Rejects", "T12 Test Not Rejects", "T12 Test Empirical Power")
+knitr::kable(table, col.names = c("Sample Size 100, 100,100","Sample Size 25, 100,25","Sample Size 100, 25,100","Sample Size 25, 25,100"), caption = "Test Results for T12 Test where p = 3 and delta = 8") %>% 
+  kable_styling(latex_options=c("scale_down", "HOLD_position"))
+
+#summary table for p =3 and delta = 8 for t22
+table <- cbind(delta8.rejects_t2_1.2[4:6],delta8.rejects_t2_2.2[4:6],delta8.rejects_t2_3.2[4:6],delta8.rejects_t2_4.2[4:6])
+rownames(table) <- c("T22 Test Rejects", "T22 Test Not Rejects", "T22 Test Empirical Power")
+knitr::kable(table, col.names = c("Sample Size 100, 100,100","Sample Size 25, 100,25","Sample Size 100, 25,100","Sample Size 25, 25,100"), caption = "Test Results for T22 Test where p = 3 and delta = 8") %>% 
+  kable_styling(latex_options=c("scale_down", "HOLD_position"))
+
+#summary table for p =3 and delta = 16 for t12
+table <- cbind(delta16.rejects_t2_1.2[1:3],delta16.rejects_t2_2.2[1:3],delta16.rejects_t2_3.2[1:3],delta16.rejects_t2_4.2[1:3])
+rownames(table) <- c("T12 Test Rejects", "T12 Test Not Rejects", "T12 Test Empirical Power")
+knitr::kable(table, col.names = c("Sample Size 100, 100,100","Sample Size 25, 100,25","Sample Size 100, 25,100","Sample Size 25, 25,100"), caption = "Test Results for T12 Test where p = 3 and delta = 2") %>% 
+  kable_styling(latex_options=c("scale_down", "HOLD_position"))
+
+#summary table for p =3 and delta = 16 for t22
+table <- cbind(delta16.rejects_t2_1.2[4:6],delta16.rejects_t2_2.2[4:6],delta16.rejects_t2_3.2[4:6],delta16.rejects_t2_4.2[4:6])
+rownames(table) <- c("T22 Test Rejects", "T22 Test Not Rejects", "T22 Test Empirical Power")
+knitr::kable(table, col.names = c("Sample Size 100, 100,100","Sample Size 25, 100,25","Sample Size 100, 25,100","Sample Size 25, 25,100"), caption = "Test Results for T22 Test where p = 3 and delta = 2") %>% 
+  kable_styling(latex_options=c("scale_down", "HOLD_position"))
+```
+```{r echo=FALSE, warning=FALSE}
+########################## QUANTILE TABLES FROM PART 2 WHERE P = 3, DELTA = 2 #########################
+#Quantiles for p=3 - T_1^2 Test, delta = 2
+table <- cbind(delta2.upper.quantile_t12_1.2,delta2.upper.quantile_t12_2.2,delta2.upper.quantile_t12_3.2,delta2.upper.quantile_t12_4.2)
+knitr::kable(table, col.names = c("Sample Size 100, 100,100","Sample Size 25, 100,25","Sample Size 100, 25,100","Sample Size 25, 25,100"), caption = "Upper Quantiles for T122 Test where p = 3 and delta = 2") %>% 
+  kable_styling(latex_options="HOLD_position")
+```
+```{r echo=FALSE}
+#Quantiles for p=3 - T_2^2 Test, delta = 2
+table <- cbind(delta2.upper.quantile_t22_1.2,delta2.upper.quantile_t22_2.2,delta2.upper.quantile_t22_3.2,delta2.upper.quantile_t22_4.2)
+knitr::kable(table, col.names = c("Sample Size 100, 100,100","Sample Size 25, 100,25","Sample Size 100, 25,100","Sample Size 25, 25,100"), caption = "Upper Quantiles for T22 Test where p = 3 and delta =2") %>% 
+  kable_styling(latex_options="HOLD_position")
+```
+
+## Tables from Part 3  {.unlisted .unnumbered}
+
+```{r echo=FALSE, warning=FALSE}
+########################## QUANTILE TABLES FROM PART 3 WITH MULTIVARITATE T DISTRIBUTION #########################
+#Quantiles p = 2 for Test T12 Part 3
+table <- cbind(upper.quantile_t12.2_1,upper.quantile_t12.2_2,upper.quantile_t12.2_3,upper.quantile_t12.2_4)
+knitr::kable(table, col.names = c("Sample Size 100, 100,100","Sample Size 25, 100,25","Sample Size 100, 25,100","Sample Size 25, 25,100"), caption = "Multivariate T Distribution Upper Quantiles for Test T12 with p = 2") %>% 
+  kable_styling(latex_options="HOLD_position")
+#Quantiles p = 2 for Test T22 Part 3
+table <- cbind(upper.quantile_t22.2_1,upper.quantile_t22.2_2,upper.quantile_t22.2_3,upper.quantile_t22.2_4)
+knitr::kable(table, col.names = c("Sample Size 100, 100,100","Sample Size 25, 100,25","Sample Size 100, 25,100","Sample Size 25, 25,100"), caption = "Multivariate T Distribution Upper Quantiles for Test T22 with p = 2") %>% 
+  kable_styling(latex_options="HOLD_position")
+#Quantiles p = 3 for Test T12 Part 3
+table <- cbind(upper.quantile_t12.3_1,upper.quantile_t12.3_2,upper.quantile_t12.3_3,upper.quantile_t12.3_4)
+knitr::kable(table, col.names = c("Sample Size 100, 100,100","Sample Size 25, 100,25","Sample Size 100, 25,100","Sample Size 25, 25,100"), caption = "Multivariate T Distribution Upper Quantiles for Test T12 with p = 3") %>% 
+  kable_styling(latex_options="HOLD_position")
+#Quantiles p = 3 for Test T22 Part 3
+table <- cbind(upper.quantile_t22.3_1,upper.quantile_t22.3_2,upper.quantile_t22.3_3,upper.quantile_t22.3_4)
+knitr::kable(table, col.names = c("Sample Size 100, 100,100","Sample Size 25, 100,25","Sample Size 100, 25,100","Sample Size 25, 25,100"), caption = "Multivariate T Distribution Upper Quantiles for Test T32 with p = 3") %>% 
+  kable_styling(latex_options="HOLD_position")
+```
+```{r echo=FALSE, warning=FALSE}
+########################## QUANTILE TABLES FROM PART 3 WITH LAPLACE DISTRIBUTION #########################
+#Quantiles p = 2 for Test T12 Part 3
+table <- cbind(upper.quantile_l12.2_1,upper.quantile_l12.2_2,upper.quantile_l12.2_3,upper.quantile_l12.2_4)
+knitr::kable(table, col.names = c("Sample Size 100, 100,100","Sample Size 25, 100,25","Sample Size 100, 25,100","Sample Size 25, 25,100"), caption = "Multivariate Laplace Distribution Upper Quantiles for Test T12 with p = 2") %>% 
+  kable_styling(latex_options="HOLD_position")
+#Quantiles p = 2 for Test T22 Part 3
+table <- cbind(upper.quantile_l22.2_1,upper.quantile_l22.2_2,upper.quantile_l22.2_3,upper.quantile_l22.2_4)
+knitr::kable(table, col.names = c("Sample Size 100, 100,100","Sample Size 25, 100,25","Sample Size 100, 25,100","Sample Size 25, 25,100"), caption = "Multivariate Laplace Distribution Upper Quantiles for Test T22 with p = 2") %>% 
+  kable_styling(latex_options="HOLD_position")
+#Quantiles p = 3 for Test T12 Part 3
+table <- cbind(upper.quantile_l12.3_1,upper.quantile_l12.3_2,upper.quantile_l12.3_3,upper.quantile_l12.3_4)
+knitr::kable(table, col.names = c("Sample Size 100, 100,100","Sample Size 25, 100,25","Sample Size 100, 25,100","Sample Size 25, 25,100"), caption = "Multivariate Laplace Distribution Upper Quantiles for Test T12 with p = 3") %>% 
+  kable_styling(latex_options="HOLD_position")
+#Quantiles p = 3 for Test T22 Part 3
+table <- cbind(upper.quantile_l22.3_1,upper.quantile_l22.3_2,upper.quantile_l22.3_3,upper.quantile_l22.3_4)
+knitr::kable(table, col.names = c("Sample Size 100, 100,100","Sample Size 25, 100,25","Sample Size 100, 25,100","Sample Size 25, 25,100"), caption = "Multivariate Laplace Distribution Upper Quantiles for Test T22 with p = 3") %>% 
+  kable_styling(latex_options="HOLD_position")
+```
+
+## Tables from Part 4  {.unlisted .unnumbered}
+```{r echo=FALSE, warning=FALSE}
+########################## RESULTS TABLES FROM PART 4 FOR P = 3 #########################
+table <- cbind(bias_n12.3_1,RB_n12.3_1,
+               bias_n12.3_2,RB_n12.3_2,
+               bias_n12.3_3,RB_n12.3_3,
+               bias_n12.3_4,RB_n12.3_4)
+knitr::kable(table, col.names = c("Bias","RB","Bias","RB","Bias","RB","Bias","RB"), caption = "Bias and RB for $T_1^2$ Test where p = 3 for Multivariate Normal Distribution") %>%
+  add_header_above(c(" " = 1, "Sample Size 100, 100,100" = 2, "Sample Size 25, 100, 25" = 2, "Sample Size 100, 25, 100" = 2,"Sample Size 25, 25, 100" = 2)) %>% 
+  kable_styling(latex_options="HOLD_position")
+
+table <- cbind(bias_n22.3_1,RB_n22.3_1,
+               bias_n22.3_2,RB_n22.3_2,
+               bias_n22.3_3,RB_n22.3_3,
+               bias_n22.3_4,RB_n22.3_4)
+knitr::kable(table, col.names = c("Bias","RB","Bias","RB","Bias","RB","Bias","RB"), caption = "Bias and RB for $T_2^2$ Test where p = 3 for Multivariate Normal Distribution") %>%
+  add_header_above(c(" " = 1, "Sample Size 100, 100,100" = 2, "Sample Size 25, 100, 25" = 2, "Sample Size 100, 25, 100" = 2,"Sample Size 25, 25, 100" = 2)) %>% 
+  kable_styling(latex_options="HOLD_position")
+table <- cbind(bias_t12.3_1,RB_t12.3_1,
+               bias_t12.3_2,RB_t12.3_2,
+               bias_t12.3_3,RB_t12.3_3,
+               bias_t12.3_4,RB_t12.3_4)
+knitr::kable(table, col.names = c("Bias","RB","Bias","RB","Bias","RB","Bias","RB"), caption = "Bias and RB for $T_1^2$ Test where p = 3 for Multivariate T Distribution") %>%
+  add_header_above(c(" " = 1, "Sample Size 100, 100,100" = 2, "Sample Size 25, 100, 25" = 2, "Sample Size 100, 25, 100" = 2,"Sample Size 25, 25, 100" = 2)) %>% 
+  kable_styling(latex_options="HOLD_position")
+table <- cbind(bias_t22.3_1,RB_t22.3_1,
+               bias_t22.3_2,RB_t22.3_2,
+               bias_t22.3_3,RB_t22.3_3,
+               bias_t22.3_4,RB_t22.3_4)
+knitr::kable(table, col.names = c("Bias","RB","Bias","RB","Bias","RB","Bias","RB"), caption = "Bias and RB for $T_2^2$ Test where p = 3 for Multivariate T Distribution") %>%
+  add_header_above(c(" " = 1, "Sample Size 100, 100,100" = 2, "Sample Size 25, 100, 25" = 2, "Sample Size 100, 25, 100" = 2,"Sample Size 25, 25, 100" = 2)) %>% 
+  kable_styling(latex_options="HOLD_position")
+table <- cbind(bias_l12.3_1,RB_l12.3_1,
+               bias_l12.3_2,RB_l12.3_2,
+               bias_l12.3_3,RB_l12.3_3,
+               bias_l12.3_4,RB_l12.3_4)
+knitr::kable(table, col.names = c("Bias","RB","Bias","RB","Bias","RB","Bias","RB"), caption = "Bias and RB for $T_1^2$ Test where p = 3 for Multivariate Laplace Distribution") %>%
+  add_header_above(c(" " = 1, "Sample Size 100, 100,100" = 2, "Sample Size 25, 100, 25" = 2, "Sample Size 100, 25, 100" = 2,"Sample Size 25, 25, 100" = 2)) %>% 
+  kable_styling(latex_options="HOLD_position")
+table <- cbind(bias_l22.3_1,RB_l22.3_1,
+               bias_l22.3_2,RB_l22.3_2,
+               bias_l22.3_3,RB_l22.3_3,
+               bias_l22.3_4,RB_l22.3_4)
+knitr::kable(table, col.names = c("Bias","RB","Bias","RB","Bias","RB","Bias","RB"), caption = "Bias and RB for $T_2^2$ Test where p = 3 for Multivariate Laplace Distribution") %>%
+  add_header_above(c(" " = 1, "Sample Size 100, 100,100" = 2, "Sample Size 25, 100, 25" = 2, "Sample Size 100, 25, 100" = 2,"Sample Size 25, 25, 100" = 2)) %>% 
+  kable_styling(latex_options="HOLD_position")
+```
+
+## Part 1 Code 
+
+```{r, warning=FALSE, eval=FALSE}
+## theta
+theta = pi / 2
+## rotation matrix
+rotation.matrix.2.2 = matrix(c(cos(theta),-sin(theta), sin(theta), cos(theta)), 2, 2)
+## lambda
+lambda1 = 1
+lambda2 = 5
+## sigma matrix
+sigma.2.2 = rotation.matrix.2.2 %*% matrix(c(lambda1, 0, 0, lambda2),
+                                           2, 2) %*% t(rotation.matrix.2.2)
+## theta
+theta1 = pi / 3
+theta2 = pi / 3
+theta3 = -pi / 3
+## rotation matrix
+rotation.matrix.3.3 = matrix(
+  c(
+    cos(theta1) * cos(theta3) - cos(theta2) * sin(theta1) * sin(theta3),-cos(theta2) *
+      cos(theta3) * sin(theta1) - cos(theta1) * sin(theta3),
+    sin(theta1) * sin(theta2),
+    cos(theta3) * sin(theta1) + cos(theta1) * cos(theta2) * sin(theta3),
+    cos(theta1) * cos(theta2) * cos(theta3) - sin(theta1) * sin(theta3),-cos(theta1) *
+      sin(theta2),
+    sin(theta2) * sin(theta3),
+    cos(theta3) * sin(theta2),
+    cos(theta2)
+  ),
+  3,
+  3,
+  byrow = TRUE
+)
+## lambda
+lambda1 = 1
+lambda2 = 3
+lambda3 = 10
+## sigma matrix
+sigma.3.3 = rotation.matrix.3.3 %*% matrix(c(lambda1, 0, 0, 0, lambda2, 0, 0, 0, lambda3),
+                                           3, 3) %*% t(rotation.matrix.3.3)
+library(matlib)
+library(mvtnorm)
+# R updated version after optimization
+T1_square.all = c()
+T2_square.all = c()
+F.value.t1 = c()
+P.value.t1 = c()
+F.value.t2 = c()
+P.value.t2 = c()
+generator.t2 = function(mu1, mu2, mu3, n1, n2, n3) {
+  ## mu where mu1 = mu2 = mu0 = 0 and we set mu3 = 10
+  set.seed(625)
+  for (i in 1:1000) {
+    if (length(mu1) == 2) {
+      x1 = rmvnorm(n = n1,
+                   mean = mu1,
+                   sigma = sigma.2.2)
+      x2 = rmvnorm(n = n2,
+                   mean = mu2,
+                   sigma = sigma.2.2)
+      x3 = rmvnorm(n = n3,
+                   mean = mu3,
+                   sigma = sigma.2.2)
+    }
+    else {
+      x1 = rmvnorm(n = n1,
+                   mean = mu1,
+                   sigma = sigma.3.3)
+      x2 = rmvnorm(n = n2,
+                   mean = mu2,
+                   sigma = sigma.3.3)
+      x3 = rmvnorm(n = n3,
+                   mean = mu3,
+                   sigma = sigma.3.3)
+    }
+    
+    S_pool.2.2 = ((n1 - 1) * cov(x1) + (n2 - 1) * cov(x2)) / (n1 + n2 -
+                                                                2)
+    T1_square = (1 / n1 + 1 / n2) ^ (-1) * t(colMeans(x1) - colMeans(x2)) %*%
+      inv(S_pool.2.2) %*%
+      (colMeans(x1) - colMeans(x2))
+    T1_square.all[i] = T1_square
+    F.value.t1 = (n1 + n2 - 2 - 1) / (2 * (n1 + n2 - 2)) * T1_square
+    P.value.t1 = cbind(P.value.t1, 1 - pf(F.value.t1, 2, n1 + n2 - 2 - 1))
+    
+    S_pool.3.3 = ((n1 - 1) * cov(x1) + (n2 - 1) * cov(x2) + (n3 - 1) * cov(x3)) /
+      (n1 + n2 + n3 - 3)
+    T2_square = (1 / n1 + 1 / n2) ^ (-1) * t(colMeans(x1) - colMeans(x2)) %*%
+      inv(S_pool.3.3) %*%
+      (colMeans(x1) - colMeans(x2))
+    T2_square.all[i] = T2_square
+    F.value.t2 = (n1 + n2 - 2 - 1) / (2 * (n1 + n2 - 2)) * T2_square
+    P.value.t2 = cbind(P.value.t2, 1 - pf(F.value.t2, 2, n1 + n2 - 2 - 1))
+  }
+  Reject.t1 = sum(P.value.t1 < 0.05)
+  Not.Reject.t1 = sum(P.value.t1 >= 0.05)
+  Empirical.Level.t1 = Reject.t1 / (Reject.t1 + Not.Reject.t1)
+  Reject.t2 = sum(P.value.t2 < 0.05)
+  Not.Reject.t2 = sum(P.value.t2 >= 0.05)
+  Empirical.Level.t2 = Reject.t2 / (Reject.t2 + Not.Reject.t2)
+  upper.quantile.t1 = quantile(T1_square.all[order(T1_square.all)], c(.85, .90, .95, .975, .99, .995))
+  upper.quantile.t2 = quantile(T2_square.all[order(T2_square.all)], c(.85, .90, .95, .975, .99, .995))
+  return(
+    c(
+      upper.quantile.t1,
+      upper.quantile.t2,
+      Reject.t1,
+      Not.Reject.t1,
+      Empirical.Level.t1,
+      Reject.t2,
+      Not.Reject.t2,
+      Empirical.Level.t2
+    )
+  )
+}
+#case i: $n_1=n_2=n_3$:
+#p=2
+upper.quantile_t12_1.1 <-
+  generator.t2(c(0, 0), c(0, 0), c(10, 10), 100, 100, 100)[1:6]
+upper.quantile_t22_1.1 <-
+  generator.t2(c(0, 0), c(0, 0), c(10, 10), 100, 100, 100)[7:12]
+rejects_t2_1.1 <-
+  generator.t2(c(0, 0), c(0, 0), c(10, 10), 100, 100, 100)[13:18]
+#p=3
+upper.quantile_t12_1.2 <-
+  generator.t2(c(0, 0, 0), c(0, 0, 0), c(10, 10, 10), 100, 100, 100)[1:6]
+upper.quantile_t22_1.2 <-
+  generator.t2(c(0, 0, 0), c(0, 0, 0), c(10, 10, 10), 100, 100, 100)[7:12]
+rejects_t2_1.2 <-
+  generator.t2(c(0, 0, 0), c(0, 0, 0), c(10, 10, 10), 100, 100, 100)[13:18]
+
+#case ii $n_1<<n_2, n_3=n_1$:
+#p=2
+upper.quantile_t12_2.1 <-
+  generator.t2(c(0, 0), c(0, 0), c(10, 10), 25, 100, 25)[1:6]
+upper.quantile_t22_2.1 <-
+  generator.t2(c(0, 0), c(0, 0), c(10, 10), 25, 100, 25)[7:12]
+rejects_t2_2.1 <-
+  generator.t2(c(0, 0), c(0, 0), c(10, 10), 25, 100, 25)[13:18]
+#p=3
+upper.quantile_t12_2.2 <-
+  generator.t2(c(0, 0, 0), c(0, 0, 0), c(10, 10, 10), 25, 100, 25)[1:6]
+upper.quantile_t22_2.2 <-
+  generator.t2(c(0, 0, 0), c(0, 0, 0), c(10, 10, 10), 25, 100, 25)[7:12]
+rejects_t2_2.2 <-
+  generator.t2(c(0, 0, 0), c(0, 0, 0), c(10, 10, 10), 25, 100, 25)[13:18]
+
+#case iii $n_1>>n_2, n_3=n_1$:
+#p=2
+upper.quantile_t12_3.1 <-
+  generator.t2(c(0, 0), c(0, 0), c(10, 10), 100, 25, 100)[1:6]
+upper.quantile_t22_3.1 <-
+  generator.t2(c(0, 0), c(0, 0), c(10, 10), 100, 25, 100)[7:12]
+rejects_t2_3.1 <-
+  generator.t2(c(0, 0), c(0, 0), c(10, 10), 100, 25, 100)[13:18]
+#p=3
+upper.quantile_t12_3.2 <-
+  generator.t2(c(0, 0, 0), c(0, 0, 0), c(10, 10, 10), 100, 25, 100)[1:6]
+upper.quantile_t22_3.2 <-
+  generator.t2(c(0, 0, 0), c(0, 0, 0), c(10, 10, 10), 100, 25, 100)[7:12]
+rejects_t2_3.2 <-
+  generator.t2(c(0, 0, 0), c(0, 0, 0), c(10, 10, 10), 25, 100, 100)[13:18]
+
+#case iv $n_1=n_2=n, n_3>>n$:
+#p=2
+upper.quantile_t12_4.1 <-
+  generator.t2(c(0, 0), c(0, 0), c(10, 10), 25, 25, 100)[1:6]
+upper.quantile_t22_4.1 <-
+  generator.t2(c(0, 0), c(0, 0), c(10, 10), 25, 25, 100)[7:12]
+rejects_t2_4.1 <-
+  generator.t2(c(0, 0), c(0, 0), c(10, 10), 25, 25, 100)[13:18]
+#p=3
+upper.quantile_t12_4.2 <-
+  generator.t2(c(0, 0, 0), c(0, 0, 0), c(10, 10, 10), 25, 25, 100)[1:6]
+upper.quantile_t22_4.2 <-
+  generator.t2(c(0, 0, 0), c(0, 0, 0), c(10, 10, 10), 25, 25, 100)[7:12]
+rejects_t2_4.2 <-
+  generator.t2(c(0, 0, 0), c(0, 0, 0), c(10, 10, 10), 25, 25, 100)[13:18]
+
+library(knitr)
+library(kableExtra)
+#summary table for p =2
+table <-
+  cbind(rejects_t2_1.1[1:3],
+        rejects_t2_2.1[1:3],
+        rejects_t2_3.1[1:3],
+        rejects_t2_4.1[1:3])
+rownames(table) <-
+  c("T12 Test Rejects",
+    "T12 Test Not Rejects",
+    "T12 Test Empirical Level")
+knitr::kable(
+  table,
+  col.names = c(
+    "Sample Size 100, 100,100",
+    "Sample Size 25, 100,25",
+    "Sample Size 100, 25,100",
+    "Sample Size 25, 25,100"
+  ),
+  caption = "Test Results for $T_1^2$ Tests where p = 2"
+) %>%
+  kable_styling(latex_options = c("scale_down", "HOLD_position"))
+table <-
+  cbind(rejects_t2_1.1[4:6],
+        rejects_t2_2.1[4:6],
+        rejects_t2_3.1[4:6],
+        rejects_t2_4.1[4:6])
+rownames(table) <-
+  c("T22 Test Rejects",
+    "T22 Test Not Rejects",
+    "T22 Test Empirical Level")
+knitr::kable(
+  table,
+  col.names = c(
+    "Sample Size 100, 100,100",
+    "Sample Size 25, 100,25",
+    "Sample Size 100, 25,100",
+    "Sample Size 25, 25,100"
+  ),
+  caption = "Test Results for $T_2^2$ Tests where p = 2"
+) %>%
+  kable_styling(latex_options = c("scale_down", "HOLD_position"))
+
+#summary table for p =3
+table <-
+  cbind(rejects_t2_1.2[1:3],
+        rejects_t2_2.2[1:3],
+        rejects_t2_3.2[1:3],
+        rejects_t2_4.2[1:3])
+rownames(table) <-
+  c("T12 Test Rejects",
+    "T12 Test Not Rejects",
+    "T12 Test Empirical Level")
+knitr::kable(
+  table,
+  col.names = c(
+    "Sample Size 100, 100,100",
+    "Sample Size 25, 100,25",
+    "Sample Size 100, 25,100",
+    "Sample Size 25, 25,100"
+  ),
+  caption = "Test Results for $T_1^2$ Tests where p = 3"
+) %>%
+  kable_styling(latex_options = c("scale_down", "HOLD_position"))
+table <-
+  cbind(rejects_t2_1.2[4:6],
+        rejects_t2_2.2[4:6],
+        rejects_t2_3.2[4:6],
+        rejects_t2_4.2[4:6])
+rownames(table) <-
+  c("T22 Test Rejects",
+    "T22 Test Not Rejects",
+    "T22 Test Empirical Level")
+knitr::kable(
+  table,
+  col.names = c(
+    "Sample Size 100, 100,100",
+    "Sample Size 25, 100,25",
+    "Sample Size 100, 25,100",
+    "Sample Size 25, 25,100"
+  ),
+  caption = "Test Results for $T_2^2$ Tests where p = 3"
+) %>%
+  kable_styling(latex_options = c("scale_down", "HOLD_position"))
+
+# Grouped Barchart
+## case i
+a = generator.t2(c(0, 0), c(0, 0), c(10, 10), 100, 100, 100)
+b = generator.t2(c(0, 0, 0), c(0, 0, 0), c(10, 10, 10), 100, 100, 100)
+## case ii
+c = generator.t2(c(0, 0), c(0, 0), c(10, 10), 25, 100, 25)
+d = generator.t2(c(0, 0, 0), c(0, 0, 0), c(10, 10, 10), 25, 100, 25)
+## case iii
+e = generator.t2(c(0, 0), c(0, 0), c(10, 10), 100, 25, 100)
+f = generator.t2(c(0, 0, 0), c(0, 0, 0), c(10, 10, 10), 100, 25, 100)
+## case iv
+g = generator.t2(c(0, 0), c(0, 0), c(10, 10), 25, 25, 100)
+h = generator.t2(c(0, 0, 0), c(0, 0, 0), c(10, 10, 10), 25, 25, 100)
+
+library(ggplot2)
+case = c(
+  rep("Sample Size \n 100, 100,100", 4),
+  rep("Sample Size \n 25, 100,25", 4),
+  rep("Sample Size \n 100, 25,100", 4),
+  rep("Sample Size \n 25, 25,100", 4)
+)
+test = rep(c("T12 p=2", "T22 p=2", "T12 p=3", "T22 p=3"), 4)
+value = c(a[13], a[16], b[13], b[16], c[13], c[16], d[13], d[16],
+          e[13], e[16], f[13], f[16], g[13], g[16], h[13], h[16])
+bardata = data.frame(case, test, value)
+ggplot(bardata, aes(fill = test, y = value, x = case, )) +
+  geom_bar(position = "dodge", stat = "identity") +
+  geom_hline(yintercept = 50,
+             col = "red",
+             lty = 2) +
+  ggtitle("Graph 1: Number of Rejects") + xlab("Sample Size Configuration") + ylab("Count of Rejects")
+```
+
+## Part 2 Code
+
+```{r, warning=FALSE, eval=FALSE}
+library(mvtnorm)
+# R updated version after optimization
+T1_square.all = c()
+T2_square.all = c()
+F.value.t1 = c()
+P.value.t1 = c()
+F.value.t2 = c()
+P.value.t2 = c()
+generator.delta.t2 = function(mu1, mu2, mu3, n1, n2, n3) {
+  ## mu where mu1 = mu2 = mu0 = 0 and we set mu3 = 10
+  set.seed(625)
+  d0 = mu1
+  for (i in 1:1000) {
+    if (length(mu1) == 2) {
+      x1 = rmvnorm(n = n1,
+                   mean = mu1,
+                   sigma = sigma.2.2)
+      x2 = rmvnorm(n = n2,
+                   mean = mu2,
+                   sigma = sigma.2.2)
+      x3 = rmvnorm(n = n3,
+                   mean = mu3,
+                   sigma = sigma.2.2)
+    }
+    else {
+      x1 = rmvnorm(n = n1,
+                   mean = mu1,
+                   sigma = sigma.3.3)
+      x2 = rmvnorm(n = n2,
+                   mean = mu2,
+                   sigma = sigma.3.3)
+      x3 = rmvnorm(n = n3,
+                   mean = mu3,
+                   sigma = sigma.3.3)
+    }
+    
+    S_pool.2.2 = ((n1 - 1) * cov(x1) + (n2 - 1) * cov(x2)) / (n1 + n2 -
+                                                                2)
+    T1_square = (1 / n1 + 1 / n2) ^ (-1) * t(colMeans(x1) - colMeans(x2) -
+                                               d0) %*% inv(S_pool.2.2) %*%
+      (colMeans(x1) - colMeans(x2) - d0)
+    T1_square.all[i] = T1_square
+    F.value.t1 = (n1 + n2 - 2 - 1) / (2 * (n1 + n2 - 2)) * T1_square
+    P.value.t1 = cbind(P.value.t1, 1 - pf(F.value.t1, 2, n1 + n2 - 2 - 1))
+    
+    S_pool.3.3 = ((n1 - 1) * cov(x1) + (n2 - 1) * cov(x2) + (n3 - 1) * cov(x3)) /
+      (n1 + n2 + n3 - 3)
+    T2_square = (1 / n1 + 1 / n2) ^ (-1) * t(colMeans(x1) - colMeans(x2) -
+                                               d0) %*% inv(S_pool.3.3) %*%
+      (colMeans(x1) - colMeans(x2) - d0)
+    T2_square.all[i] = T2_square
+    F.value.t2 = (n1 + n2 - 2 - 1) / (2 * (n1 + n2 - 2)) * T2_square
+    P.value.t2 = cbind(P.value.t2, 1 - pf(F.value.t2, 2, n1 + n2 - 2 - 1))
+  }
+  Reject.t1 = sum(P.value.t1 < 0.05)
+  Not.Reject.t1 = sum(P.value.t1 >= 0.05)
+  Empirical.Level.t1 = Reject.t1 / (Reject.t1 + Not.Reject.t1)
+  Reject.t2 = sum(P.value.t2 < 0.05)
+  Not.Reject.t2 = sum(P.value.t2 >= 0.05)
+  Empirical.Level.t2 = Reject.t2 / (Reject.t2 + Not.Reject.t2)
+  upper.quantile.t1 = quantile(T1_square.all[order(T1_square.all)], c(.85, .90, .95, .975, .99, .995))
+  upper.quantile.t2 = quantile(T2_square.all[order(T2_square.all)], c(.85, .90, .95, .975, .99, .995))
+  return(
+    c(
+      upper.quantile.t1,
+      upper.quantile.t2,
+      Reject.t1,
+      Not.Reject.t1,
+      Empirical.Level.t1,
+      Reject.t2,
+      Not.Reject.t2,
+      Empirical.Level.t2
+    )
+  )
+}
+
+#case i: $n_1=n_2=n_3$:
+#delta = 2
+# p = 2
+delta2.upper.quantile_t12_1.1 <-
+  generator.delta.t2(c(sqrt(2 / 2), sqrt(2 / 2)), c(0, 0), c(10, 10), 100, 100, 100)[1:6]
+delta2.upper.quantile_t22_1.1 <-
+  generator.delta.t2(c(sqrt(2 / 2), sqrt(2 / 2)), c(0, 0), c(10, 10), 100, 100, 100)[7:12]
+delta2.rejects_t2_1.1 <-
+  generator.delta.t2(c(sqrt(2 / 2), sqrt(2 / 2)), c(0, 0), c(10, 10), 100, 100, 100)[13:18]
+# p = 3
+delta2.upper.quantile_t12_1.2 <-
+  generator.delta.t2(c(sqrt(2 / 3), sqrt(2 / 3), sqrt(2 / 3)), c(0, 0, 0), c(10, 10, 10), 100, 100, 100)[1:6]
+delta2.upper.quantile_t22_1.2 <-
+  generator.delta.t2(c(sqrt(2 / 3), sqrt(2 / 3), sqrt(2 / 3)), c(0, 0, 0), c(10, 10, 10), 100, 100, 100)[7:12]
+delta2.rejects_t2_1.2 <-
+  generator.delta.t2(c(sqrt(2 / 3), sqrt(2 / 3), sqrt(2 / 3)), c(0, 0, 0), c(10, 10, 10), 100, 100, 100)[13:18]
+
+#delta = 4
+# p = 2
+delta4.upper.quantile_t12_1.1 <-
+  generator.delta.t2(c(sqrt(4 / 2), sqrt(4 / 2)), c(0, 0), c(10, 10), 100, 100, 100)[1:6]
+delta4.upper.quantile_t22_1.1 <-
+  generator.delta.t2(c(sqrt(4 / 2), sqrt(4 / 2)), c(0, 0), c(10, 10), 100, 100, 100)[7:12]
+delta4.rejects_t2_1.1 <-
+  generator.delta.t2(c(sqrt(4 / 2), sqrt(4 / 2)), c(0, 0), c(10, 10), 100, 100, 100)[13:18]
+# p= 3
+delta4.upper.quantile_t12_1.2 <-
+  generator.delta.t2(c(sqrt(4 / 3), sqrt(4 / 3), sqrt(4 / 3)), c(0, 0, 0), c(10, 10, 10), 100, 100, 100)[1:6]
+delta4.upper.quantile_t22_1.2 <-
+  generator.delta.t2(c(sqrt(4 / 3), sqrt(4 / 3), sqrt(4 / 3)), c(0, 0, 0), c(10, 10, 10), 100, 100, 100)[7:12]
+delta4.rejects_t2_1.2 <-
+  generator.delta.t2(c(sqrt(4 / 3), sqrt(4 / 3), sqrt(4 / 3)), c(0, 0, 0), c(10, 10, 10), 100, 100, 100)[13:18]
+
+
+#delta = 8
+# p = 2
+delta8.upper.quantile_t12_1.1 <-
+  generator.delta.t2(c(sqrt(8 / 2), sqrt(8 / 2)), c(0, 0), c(10, 10), 100, 100, 100)[1:6]
+delta8.upper.quantile_t22_1.1 <-
+  generator.delta.t2(c(sqrt(8 / 2), sqrt(8 / 2)), c(0, 0), c(10, 10), 100, 100, 100)[7:12]
+delta8.rejects_t2_1.1 <-
+  generator.delta.t2(c(sqrt(8 / 2), sqrt(8 / 2)), c(0, 0), c(10, 10), 100, 100, 100)[13:18]
+# p= 3
+delta8.upper.quantile_t12_1.2 <-
+  generator.delta.t2(c(sqrt(8 / 3), sqrt(8 / 3), sqrt(8 / 3)), c(0, 0, 0), c(10, 10, 10), 100, 100, 100)[1:6]
+delta8.upper.quantile_t22_1.2 <-
+  generator.delta.t2(c(sqrt(8 / 3), sqrt(8 / 3), sqrt(8 / 3)), c(0, 0, 0), c(10, 10, 10), 100, 100, 100)[7:12]
+delta8.rejects_t2_1.2 <-
+  generator.delta.t2(c(sqrt(8 / 3), sqrt(8 / 3), sqrt(8 / 3)), c(0, 0, 0), c(10, 10, 10), 100, 100, 100)[13:18]
+
+#delta = 16
+# p = 2
+delta16.upper.quantile_t12_1.1 <-
+  generator.delta.t2(c(sqrt(16 / 2), sqrt(16 / 2)), c(0, 0), c(10, 10), 100, 100, 100)[1:6]
+delta16.upper.quantile_t22_1.1 <-
+  generator.delta.t2(c(sqrt(16 / 2), sqrt(16 / 2)), c(0, 0), c(10, 10), 100, 100, 100)[7:12]
+delta16.rejects_t2_1.1 <-
+  generator.delta.t2(c(sqrt(16 / 2), sqrt(16 / 2)), c(0, 0), c(10, 10), 100, 100, 100)[13:18]
+# p= 3
+delta16.upper.quantile_t12_1.2 <-
+  generator.delta.t2(c(sqrt(16 / 3), sqrt(16 / 3), sqrt(16 / 3)), c(0, 0, 0), c(10, 10, 10), 100, 100, 100)[1:6]
+delta16.upper.quantile_t22_1.2 <-
+  generator.delta.t2(c(sqrt(16 / 3), sqrt(16 / 3), sqrt(16 / 3)), c(0, 0, 0), c(10, 10, 10), 100, 100, 100)[7:12]
+delta16.rejects_t2_1.2 <-
+  generator.delta.t2(c(sqrt(16 / 3), sqrt(16 / 3), sqrt(16 / 3)), c(0, 0, 0), c(10, 10, 10), 100, 100, 100)[13:18]
+
+#case ii $n_1<<n_2, n_3=n_1$:
+#delta = 2
+# p = 2
+delta2.upper.quantile_t12_2.1 <-
+  generator.delta.t2(c(sqrt(2 / 2), sqrt(2 / 2)), c(0, 0), c(10, 10), 25, 100, 25)[1:6]
+delta2.upper.quantile_t22_2.1 <-
+  generator.delta.t2(c(sqrt(2 / 2), sqrt(2 / 2)), c(0, 0), c(10, 10), 25, 100, 25)[7:12]
+delta2.rejects_t2_2.1 <-
+  generator.delta.t2(c(sqrt(2 / 2), sqrt(2 / 2)), c(0, 0), c(10, 10), 25, 100, 25)[13:18]
+# p= 3
+delta2.upper.quantile_t12_2.2 <-
+  generator.delta.t2(c(sqrt(2 / 3), sqrt(2 / 3), sqrt(2 / 3)), c(0, 0, 0), c(10, 10, 10), 25, 100, 25)[1:6]
+delta2.upper.quantile_t22_2.2 <-
+  generator.delta.t2(c(sqrt(2 / 3), sqrt(2 / 3), sqrt(2 / 3)), c(0, 0, 0), c(10, 10, 10), 25, 100, 25)[7:12]
+delta2.rejects_t2_2.2 <-
+  generator.delta.t2(c(sqrt(2 / 3), sqrt(2 / 3), sqrt(2 / 3)), c(0, 0, 0), c(10, 10, 10), 25, 100, 25)[13:18]
+
+#delta = 4
+# p = 2
+delta4.upper.quantile_t12_2.1 <-
+  generator.delta.t2(c(sqrt(4 / 2), sqrt(4 / 2)), c(0, 0), c(10, 10), 25, 100, 25)[1:6]
+delta4.upper.quantile_t22_2.1 <-
+  generator.delta.t2(c(sqrt(4 / 2), sqrt(4 / 2)), c(0, 0), c(10, 10), 25, 100, 25)[7:12]
+delta4.rejects_t2_2.1 <-
+  generator.delta.t2(c(sqrt(4 / 2), sqrt(4 / 2)), c(0, 0), c(10, 10), 25, 100, 25)[13:18]
+# p= 3
+delta4.upper.quantile_t12_2.2 <-
+  generator.delta.t2(c(sqrt(4 / 3), sqrt(4 / 3), sqrt(4 / 3)), c(0, 0, 0), c(10, 10, 10), 25, 100, 25)[1:6]
+delta4.upper.quantile_t22_2.2 <-
+  generator.delta.t2(c(sqrt(4 / 3), sqrt(4 / 3), sqrt(4 / 3)), c(0, 0, 0), c(10, 10, 10), 25, 100, 25)[7:12]
+delta4.rejects_t2_2.2 <-
+  generator.delta.t2(c(sqrt(4 / 3), sqrt(4 / 3), sqrt(4 / 3)), c(0, 0, 0), c(10, 10, 10), 25, 100, 25)[13:18]
+
+#delta = 8
+# p = 2
+delta8.upper.quantile_t12_2.1 <-
+  generator.delta.t2(c(sqrt(8 / 2), sqrt(8 / 2)), c(0, 0), c(10, 10), 25, 100, 25)[1:6]
+delta8.upper.quantile_t22_2.1 <-
+  generator.delta.t2(c(sqrt(8 / 2), sqrt(8 / 2)), c(0, 0), c(10, 10), 25, 100, 25)[7:12]
+delta8.rejects_t2_2.1 <-
+  generator.delta.t2(c(sqrt(8 / 2), sqrt(8 / 2)), c(0, 0), c(10, 10), 25, 100, 25)[13:18]
+# p= 3
+delta8.upper.quantile_t12_2.2 <-
+  generator.delta.t2(c(sqrt(8 / 3), sqrt(8 / 3), sqrt(8 / 3)), c(0, 0, 0), c(10, 10, 10), 25, 100, 25)[1:6]
+delta8.upper.quantile_t22_2.2 <-
+  generator.delta.t2(c(sqrt(8 / 3), sqrt(8 / 3), sqrt(8 / 3)), c(0, 0, 0), c(10, 10, 10), 25, 100, 25)[7:12]
+delta8.rejects_t2_2.2 <-
+  generator.delta.t2(c(sqrt(8 / 3), sqrt(8 / 3), sqrt(8 / 3)), c(0, 0, 0), c(10, 10, 10), 25, 100, 25)[13:18]
+
+
+#delta = 16
+# p = 2
+delta16.upper.quantile_t12_2.1 <-
+  generator.delta.t2(c(sqrt(16 / 2), sqrt(16 / 2)), c(0, 0), c(10, 10), 25, 100, 25)[1:6]
+delta16.upper.quantile_t22_2.1 <-
+  generator.delta.t2(c(sqrt(16 / 2), sqrt(16 / 2)), c(0, 0), c(10, 10), 25, 100, 25)[7:12]
+delta16.rejects_t2_2.1 <-
+  generator.delta.t2(c(sqrt(16 / 2), sqrt(16 / 2)), c(0, 0), c(10, 10), 25, 100, 25)[13:18]
+# p= 3
+delta16.upper.quantile_t12_2.2 <-
+  generator.delta.t2(c(sqrt(16 / 3), sqrt(16 / 3), sqrt(16 / 3)), c(0, 0, 0), c(10, 10, 10), 25, 100, 25)[1:6]
+delta16.upper.quantile_t22_2.2 <-
+  generator.delta.t2(c(sqrt(16 / 3), sqrt(16 / 3), sqrt(16 / 3)), c(0, 0, 0), c(10, 10, 10), 25, 100, 25)[7:12]
+delta16.rejects_t2_2.2 <-
+  generator.delta.t2(c(sqrt(16 / 3), sqrt(16 / 3), sqrt(16 / 3)), c(0, 0, 0), c(10, 10, 10), 25, 100, 25)[13:18]
+
+#case iii $n_1>>n_2, n_3=n_1$
+#delta = 2
+# p = 2
+gen3.2.2 <-
+  generator.delta.t2(c(sqrt(2 / 2), sqrt(2 / 2)), c(0, 0), c(10, 10), 100, 25, 100)
+delta2.upper.quantile_t12_3.1 <- gen3.2.2[1:6]
+delta2.upper.quantile_t22_3.1 <- gen3.2.2[7:12]
+delta2.rejects_t2_3.1 <- gen3.2.2[13:18]
+# p = 3
+gen3.2.3 <-
+  generator.delta.t2(c(sqrt(2 / 3), sqrt(2 / 3), sqrt(2 / 3)), c(0, 0, 0), c(10, 10, 10), 100, 25, 100)
+delta2.upper.quantile_t12_3.2 <- gen3.2.3[1:6]
+delta2.upper.quantile_t22_3.2 <- gen3.2.3[7:12]
+delta2.rejects_t2_3.2 <- gen3.2.3[13:18]
+
+#delta = 4
+# p = 2
+gen3.4.2 <-
+  generator.delta.t2(c(sqrt(4 / 2), sqrt(4 / 2)), c(0, 0), c(10, 10), 100, 25, 100)
+delta4.upper.quantile_t12_3.1 <- gen3.4.2[1:6]
+delta4.upper.quantile_t22_3.1 <- gen3.4.2[7:12]
+delta4.rejects_t2_3.1 <- gen3.4.2[13:18]
+# p = 3
+gen3.4.3 <-
+  generator.delta.t2(c(sqrt(4 / 3), sqrt(4 / 3), sqrt(4 / 3)), c(0, 0, 0), c(10, 10, 10), 100, 25, 100)
+delta4.upper.quantile_t12_3.2 <- gen3.4.3[1:6]
+delta4.upper.quantile_t22_3.2 <- gen3.4.3[7:12]
+delta4.rejects_t2_3.2 <- gen3.4.3[13:18]
+
+#delta = 8
+# p = 2
+gen3.8.2 <-
+  generator.delta.t2(c(sqrt(8 / 2), sqrt(8 / 2)), c(0, 0), c(10, 10), 100, 25, 100)
+delta8.upper.quantile_t12_3.1 <- gen3.8.2[1:6]
+delta8.upper.quantile_t22_3.1 <- gen3.8.2[7:12]
+delta8.rejects_t2_3.1 <- gen3.8.2[13:18]
+# p = 3
+gen3.8.3 <-
+  generator.delta.t2(c(sqrt(8 / 3), sqrt(8 / 3), sqrt(8 / 3)), c(0, 0, 0), c(10, 10, 10), 100, 25, 100)
+delta8.upper.quantile_t12_3.2 <- gen3.8.3[1:6]
+delta8.upper.quantile_t22_3.2 <- gen3.8.3[7:12]
+delta8.rejects_t2_3.2 <- gen3.8.3[13:18]
+
+#delta = 16
+# p = 2
+gen3.16.2 <-
+  generator.delta.t2(c(sqrt(16 / 2), sqrt(16 / 2)), c(0, 0), c(10, 10), 100, 25, 100)
+delta16.upper.quantile_t12_3.1 <- gen3.16.2[1:6]
+delta16.upper.quantile_t22_3.1 <- gen3.16.2[7:12]
+delta16.rejects_t2_3.1 <- gen3.16.2[13:18]
+# p = 3
+gen3.16.3 <-
+  generator.delta.t2(c(sqrt(16 / 3), sqrt(16 / 3), sqrt(16 / 3)), c(0, 0, 0), c(10, 10, 10), 100, 25, 100)
+delta16.upper.quantile_t12_3.2 <- gen3.16.3[1:6]
+delta16.upper.quantile_t22_3.2 <- gen3.16.3[7:12]
+delta16.rejects_t2_3.2 <- gen3.16.3[13:18]
+
+#case iv $n_1=n_2=n, n_3>>n$:
+#delta = 2
+# p = 2
+gen4.2.2 <-
+  generator.delta.t2(c(sqrt(2 / 2), sqrt(2 / 2)), c(0, 0), c(10, 10), 25, 25, 100)
+delta2.upper.quantile_t12_4.1 <- gen4.2.2[1:6]
+delta2.upper.quantile_t22_4.1 <- gen4.2.2[7:12]
+delta2.rejects_t2_4.1 <- gen4.2.2[13:18]
+# p = 3
+gen4.2.3 <-
+  generator.delta.t2(c(sqrt(2 / 3), sqrt(2 / 3), sqrt(2 / 3)), c(0, 0, 0), c(10, 10, 10), 25, 25, 100)
+delta2.upper.quantile_t12_4.2 <- gen4.2.3[1:6]
+delta2.upper.quantile_t22_4.2 <- gen4.2.3[7:12]
+delta2.rejects_t2_4.2 <- gen4.2.3[13:18]
+
+#delta = 4
+# p = 2
+gen4.4.2 <-
+  generator.delta.t2(c(sqrt(4 / 2), sqrt(4 / 2)), c(0, 0), c(10, 10), 25, 25, 100)
+delta4.upper.quantile_t12_4.1 <- gen4.4.2[1:6]
+delta4.upper.quantile_t22_4.1 <- gen4.4.2[7:12]
+delta4.rejects_t2_4.1 <- gen4.4.2[13:18]
+# p = 3
+gen4.4.3 <-
+  generator.delta.t2(c(sqrt(4 / 3), sqrt(4 / 3), sqrt(4 / 3)), c(0, 0, 0), c(10, 10, 10), 25, 25, 100)
+delta4.upper.quantile_t12_4.2 <- gen4.4.3[1:6]
+delta4.upper.quantile_t22_4.2 <- gen4.4.3[7:12]
+delta4.rejects_t2_4.2 <- gen4.4.3[13:18]
+
+#delta = 8
+# p = 2
+gen4.8.2 <-
+  generator.delta.t2(c(sqrt(8 / 2), sqrt(8 / 2)), c(0, 0), c(10, 10), 25, 25, 100)
+delta8.upper.quantile_t12_4.1 <- gen4.8.2[1:6]
+delta8.upper.quantile_t22_4.1 <- gen4.8.2[7:12]
+delta8.rejects_t2_4.1 <- gen4.8.2[13:18]
+# p = 3
+gen4.8.3 <-
+  generator.delta.t2(c(sqrt(8 / 3), sqrt(8 / 3), sqrt(8 / 3)), c(0, 0, 0), c(10, 10, 10), 25, 25, 100)
+delta8.upper.quantile_t12_4.2 <- gen4.8.3[1:6]
+delta8.upper.quantile_t22_4.2 <- gen4.8.3[7:12]
+delta8.rejects_t2_4.2 <- gen4.8.3[13:18]
+
+#delta = 16
+# p = 2
+gen4.16.2 <-
+  generator.delta.t2(c(sqrt(16 / 2), sqrt(16 / 2)), c(0, 0), c(10, 10), 25, 25, 100)
+delta16.upper.quantile_t12_4.1 <- gen4.16.2[1:6]
+delta16.upper.quantile_t22_4.1 <- gen4.16.2[7:12]
+delta16.rejects_t2_4.1 <- gen4.16.2[13:18]
+# p = 3
+gen4.16.3 <-
+  generator.delta.t2(c(sqrt(16 / 3), sqrt(16 / 3), sqrt(16 / 3)), c(0, 0, 0), c(10, 10, 10), 25, 25, 100)
+delta16.upper.quantile_t12_4.2 <- gen4.16.3[1:6]
+delta16.upper.quantile_t22_4.2 <- gen4.16.3[7:12]
+delta16.rejects_t2_4.2 <- gen4.16.3[13:18]
+
+########################## TEST SUMMARY TABLES FROM PART 2 FOR P=2 (only delta = 2) #########################
+#summary table for p =2 and delta = 2 t12
+table <-
+  cbind(
+    delta2.rejects_t2_1.1[1:3],
+    delta2.rejects_t2_2.1[1:3],
+    delta2.rejects_t2_3.1[1:3],
+    delta2.rejects_t2_4.1[1:3]
+  )
+rownames(table) <-
+  c("T12 Test Rejects",
+    "T12 Test Not Rejects",
+    "T12 Test Empirical Power")
+knitr::kable(
+  table,
+  col.names = c(
+    "Sample Size 100, 100,100",
+    "Sample Size 25, 100,25",
+    "Sample Size 100, 25,100",
+    "Sample Size 25, 25,100"
+  ),
+  caption = "Test Results for T12 Test where p = 2 and delta = 2"
+) %>%
+  kable_styling(latex_options = c("scale_down", "HOLD_position"))
+
+#summary table for p =2 and delta = 2 t22
+table <-
+  cbind(
+    delta2.rejects_t2_1.1[4:6],
+    delta2.rejects_t2_2.1[4:6],
+    delta2.rejects_t2_3.1[4:6],
+    delta2.rejects_t2_4.1[4:6]
+  )
+rownames(table) <-
+  c("T22 Test Rejects",
+    "T22 Test Not Rejects",
+    "T22 Test Empirical Power")
+knitr::kable(
+  table,
+  col.names = c(
+    "Sample Size 100, 100,100",
+    "Sample Size 25, 100,25",
+    "Sample Size 100, 25,100",
+    "Sample Size 25, 25,100"
+  ),
+  caption = "Test Results for T22 Test where p = 2 and delta = 2"
+) %>%
+  kable_styling(latex_options = c("scale_down", "HOLD_position"))
+
+########################## TEST SUMMARY TABLES FROM PART 2 FOR P=3 (delta = 2 only)#########################
+#summary table for p =2 and delta = 2 for t12
+table <-
+  cbind(
+    delta2.rejects_t2_1.2[1:3],
+    delta2.rejects_t2_2.2[1:3],
+    delta2.rejects_t2_3.2[1:3],
+    delta2.rejects_t2_4.2[1:3]
+  )
+rownames(table) <-
+  c("T12 Test Rejects",
+    "T12 Test Not Rejects",
+    "T12 Test Empirical Power")
+knitr::kable(
+  table,
+  col.names = c(
+    "Sample Size 100, 100,100",
+    "Sample Size 25, 100,25",
+    "Sample Size 100, 25,100",
+    "Sample Size 25, 25,100"
+  ),
+  caption = "Test Results for T12 Test where p = 3 and delta = 2"
+) %>%
+  kable_styling(latex_options = c("scale_down", "HOLD_position"))
+
+#summary table for p =2 and delta = 2 for t22
+table <-
+  cbind(
+    delta2.rejects_t2_1.2[4:6],
+    delta2.rejects_t2_2.2[4:6],
+    delta2.rejects_t2_3.2[4:6],
+    delta2.rejects_t2_4.2[4:6]
+  )
+rownames(table) <-
+  c("T22 Test Rejects",
+    "T22 Test Not Rejects",
+    "T22 Test Empirical Power")
+knitr::kable(
+  table,
+  col.names = c(
+    "Sample Size 100, 100,100",
+    "Sample Size 25, 100,25",
+    "Sample Size 100, 25,100",
+    "Sample Size 25, 25,100"
+  ),
+  caption = "Test Results for T22 Test where p = 3 and delta = 2"
+) %>%
+  kable_styling(latex_options = c("scale_down", "HOLD_position"))
+
+# case i
+options(digits = 2)
+# T=1
+n1 = 100
+n2 = 100
+n3 = 100
+critical.t1 = qf(.95, 2, n1 + n2 - 2 - 1) ^ 2 * (n1 + n2 - 2 - 1) / (2 *
+                                                                       (n1 + n2 - 2))
+#critical.t1
+power.t1 = 1 - pf(critical.t1, 2, n1 + n2 - 2 - 1)
+#power.t1
+# T=2
+n1 = 100
+n2 = 100
+n3 = 100
+critical.t2 = qf(.95, 2, n1 + n2 + n3 - 3 - 1) ^ 2 * (n1 + n2 - 2 - 1) /
+  (2 * (n1 + n2 - 2))
+#critical.t2
+power.t2 = 1 - pf(critical.t2, 2, n1 + n2 - 2 - 1)
+#power.t2
+
+# case i, p=2
+# delta = 2
+ncp = t(c(sqrt(2 / 2), sqrt(2 / 2))) %*% solve(sigma.2.2) %*% c(sqrt(2 /
+                                                                       2), sqrt(2 / 2))
+power.new_2.t1 = 1 - pf(critical.t1, 2, n1 + n2 - 2 - 1, ncp = ncp)
+power.new_2.t2 = 1 - pf(critical.t2, 2, n1 + n2 - 2 - 1, ncp = ncp)
+# delta = 4
+ncp = t(c(sqrt(4 / 2), sqrt(4 / 2))) %*% solve(sigma.2.2) %*% c(sqrt(4 /
+                                                                       2), sqrt(4 / 2))
+power.new_4.t1 = 1 - pf(critical.t1, 2, n1 + n2 - 2 - 1, ncp = ncp)
+power.new_4.t2 = 1 - pf(critical.t2, 2, n1 + n2 - 2 - 1, ncp = ncp)
+# delta = 8
+ncp = t(c(sqrt(8 / 2), sqrt(8 / 2))) %*% solve(sigma.2.2) %*% c(sqrt(8 /
+                                                                       2), sqrt(8 / 2))
+power.new_8.t1 = 1 - pf(critical.t1, 2, n1 + n2 - 2 - 1, ncp = ncp)
+power.new_8.t2 = 1 - pf(critical.t2, 2, n1 + n2 - 2 - 1, ncp = ncp)
+# delta = 16
+ncp = t(c(sqrt(16 / 2), sqrt(16 / 2))) %*% solve(sigma.2.2) %*% c(sqrt(16 /
+                                                                         2), sqrt(16 / 2))
+power.new_16.t1 = 1 - pf(critical.t1, 2, n1 + n2 - 2 - 1, ncp = ncp)
+power.new_16.t2 = 1 - pf(critical.t2, 2, n1 + n2 - 2 - 1, ncp = ncp)
+t12.2.i = c(power.t1,
+            power.new_2.t1,
+            power.new_4.t1,
+            power.new_8.t1,
+            power.new_16.t1)
+t22.2.i = c(power.t2,
+            power.new_2.t2,
+            power.new_4.t2,
+            power.new_8.t2,
+            power.new_16.t2)
+
+# case i, p= 3
+# delta = 2
+ncp = t(c(sqrt(2 / 3), sqrt(2 / 3), sqrt(2 / 3))) %*% solve(sigma.3.3) %*%
+  c(sqrt(2 / 3), sqrt(2 / 3), sqrt(2 / 3))
+power.new_2.t1 = 1 - pf(critical.t1, 2, n1 + n2 - 2 - 1, ncp = ncp)
+power.new_2.t2 = 1 - pf(critical.t2, 2, n1 + n2 - 2 - 1, ncp = ncp)
+# delta = 4
+ncp = t(c(sqrt(4 / 3), sqrt(4 / 3), sqrt(4 / 3))) %*% solve(sigma.3.3) %*%
+  c(sqrt(4 / 3), sqrt(4 / 3), sqrt(4 / 3))
+power.new_4.t1 = 1 - pf(critical.t1, 2, n1 + n2 - 2 - 1, ncp = ncp)
+power.new_4.t2 = 1 - pf(critical.t2, 2, n1 + n2 - 2 - 1, ncp = ncp)
+# delta = 8
+ncp = t(c(sqrt(8 / 3), sqrt(8 / 3), sqrt(8 / 3))) %*% solve(sigma.3.3) %*%
+  c(sqrt(8 / 3), sqrt(8 / 3), sqrt(8 / 3))
+power.new_8.t1 = 1 - pf(critical.t1, 2, n1 + n2 - 2 - 1, ncp = ncp)
+power.new_8.t2 = 1 - pf(critical.t2, 2, n1 + n2 - 2 - 1, ncp = ncp)
+# delta = 16
+ncp = t(c(sqrt(16 / 3), sqrt(16 / 3), sqrt(16 / 3))) %*% solve(sigma.3.3) %*%
+  c(sqrt(16 / 3), sqrt(16 / 3), sqrt(16 / 3))
+power.new_16.t1 = 1 - pf(critical.t1, 2, n1 + n2 - 2 - 1, ncp = ncp)
+power.new_16.t2 = 1 - pf(critical.t2, 2, n1 + n2 - 2 - 1, ncp = ncp)
+
+t12.3.i = c(power.t1,
+            power.new_2.t1,
+            power.new_4.t1,
+            power.new_8.t1,
+            power.new_16.t1)
+t22.3.i = c(power.t2,
+            power.new_2.t2,
+            power.new_4.t2,
+            power.new_8.t2,
+            power.new_16.t2)
+
+#summary table
+table <- cbind(t12.2.i, t22.2.i, t12.3.i, t22.3.i)
+rownames(table) <-
+  c("Delta = 0", "Delta = 2", "Delta = 4", "Delta = 8", "Delta = 16")
+knitr::kable(
+  table,
+  col.names = c("T12 \n p = 2", "T22 \n p = 2", "T12 \n p = 3", "T22 \n p = 3"),
+  caption = "Empirical Power Results"
+) %>%
+  kable_styling(latex_options = c("HOLD_position"))
+
+# case ii
+options(digits = 2)
+# compute (1-alpha)th quantile of T_1^2
+n1 = 25
+n2 = 100
+n3 = 25
+critical.t1 = qf(.95, 2, n1 + n2 - 2 - 1) ^ 2 * (n1 + n2 - 2 - 1) / (2 *
+                                                                       (n1 + n2 - 2))
+#critical.t1
+power.t1 = 1 - pf(critical.t1, 2, n1 + n2 - 2 - 1)
+#power.t1
+# compute (1-alpha)th quantile of T_2^2
+n1 = 25
+n2 = 100
+n3 = 25
+critical.t2 = qf(.95, 2, n1 + n2 + n3 - 3 - 1) ^ 2 * (n1 + n2 - 2 - 1) /
+  (2 * (n1 + n2 - 2))
+#critical.t2
+power.t2 = 1 - pf(critical.t2, 2, n1 + n2 - 2 - 1)
+#power.t2
+
+# case ii, p=2
+# delta = 2
+ncp = t(c(sqrt(2 / 2), sqrt(2 / 2))) %*% solve(sigma.2.2) %*% c(sqrt(2 /
+                                                                       2), sqrt(2 / 2))
+power.new_2.t1 = 1 - pf(critical.t1, 2, n1 + n2 - 2 - 1, ncp = ncp)
+power.new_2.t2 = 1 - pf(critical.t2, 2, n1 + n2 - 2 - 1, ncp = ncp)
+# delta = 4
+ncp = t(c(sqrt(4 / 2), sqrt(4 / 2))) %*% solve(sigma.2.2) %*% c(sqrt(4 /
+                                                                       2), sqrt(4 / 2))
+power.new_4.t1 = 1 - pf(critical.t1, 2, n1 + n2 - 2 - 1, ncp = ncp)
+power.new_4.t2 = 1 - pf(critical.t2, 2, n1 + n2 - 2 - 1, ncp = ncp)
+# delta = 8
+ncp = t(c(sqrt(8 / 2), sqrt(8 / 2))) %*% solve(sigma.2.2) %*% c(sqrt(8 /
+                                                                       2), sqrt(8 / 2))
+power.new_8.t1 = 1 - pf(critical.t1, 2, n1 + n2 - 2 - 1, ncp = ncp)
+power.new_8.t2 = 1 - pf(critical.t2, 2, n1 + n2 - 2 - 1, ncp = ncp)
+# delta = 16
+ncp = t(c(sqrt(16 / 2), sqrt(16 / 2))) %*% solve(sigma.2.2) %*% c(sqrt(16 /
+                                                                         2), sqrt(16 / 2))
+power.new_16.t1 = 1 - pf(critical.t1, 2, n1 + n2 - 2 - 1, ncp = ncp)
+power.new_16.t2 = 1 - pf(critical.t2, 2, n1 + n2 - 2 - 1, ncp = ncp)
+
+t12.2.ii = c(power.t1,
+             power.new_2.t1,
+             power.new_4.t1,
+             power.new_8.t1,
+             power.new_16.t1)
+t22.2.ii = c(power.t2,
+             power.new_2.t2,
+             power.new_4.t2,
+             power.new_8.t2,
+             power.new_16.t2)
+
+# case ii, p=3
+# delta = 2
+ncp = t(c(sqrt(2 / 3), sqrt(2 / 3), sqrt(2 / 3))) %*% solve(sigma.3.3) %*%
+  c(sqrt(2 / 3), sqrt(2 / 3), sqrt(2 / 3))
+power.new_2.t1 = 1 - pf(critical.t1, 2, n1 + n2 - 2 - 1, ncp = ncp)
+power.new_2.t2 = 1 - pf(critical.t2, 2, n1 + n2 - 2 - 1, ncp = ncp)
+# delta = 4
+ncp = t(c(sqrt(4 / 3), sqrt(4 / 3), sqrt(4 / 3))) %*% solve(sigma.3.3) %*%
+  c(sqrt(4 / 3), sqrt(4 / 3), sqrt(4 / 3))
+power.new_4.t1 = 1 - pf(critical.t1, 2, n1 + n2 - 2 - 1, ncp = ncp)
+power.new_4.t2 = 1 - pf(critical.t2, 2, n1 + n2 - 2 - 1, ncp = ncp)
+# delta = 8
+ncp = t(c(sqrt(8 / 3), sqrt(8 / 3), sqrt(8 / 3))) %*% solve(sigma.3.3) %*%
+  c(sqrt(8 / 3), sqrt(8 / 3), sqrt(8 / 3))
+power.new_8.t1 = 1 - pf(critical.t1, 2, n1 + n2 - 2 - 1, ncp = ncp)
+power.new_8.t2 = 1 - pf(critical.t2, 2, n1 + n2 - 2 - 1, ncp = ncp)
+# delta = 16
+ncp = t(c(sqrt(16 / 3), sqrt(16 / 3), sqrt(16 / 3))) %*% solve(sigma.3.3) %*%
+  c(sqrt(16 / 3), sqrt(16 / 3), sqrt(16 / 3))
+power.new_16.t1 = 1 - pf(critical.t1, 2, n1 + n2 - 2 - 1, ncp = ncp)
+power.new_16.t2 = 1 - pf(critical.t2, 2, n1 + n2 - 2 - 1, ncp = ncp)
+
+t12.3.ii = c(power.t1,
+             power.new_2.t1,
+             power.new_4.t1,
+             power.new_8.t1,
+             power.new_16.t1)
+t22.3.ii = c(power.t2,
+             power.new_2.t2,
+             power.new_4.t2,
+             power.new_8.t2,
+             power.new_16.t2)
+
+# case iii
+options(digits = 2)
+# compute (1-alpha)th quantile of T_1^2
+n1 = 100
+n2 = 25
+n3 = 100
+critical.t1 = qf(.95, 2, n1 + n2 - 2 - 1) ^ 2 * (n1 + n2 - 2 - 1) / (2 *
+                                                                       (n1 + n2 - 2))
+#critical.t1
+power.t1 = 1 - pf(critical.t1, 2, n1 + n2 - 2 - 1)
+#power.t1
+# compute (1-alpha)th quantile of T_2^2
+n1 = 100
+n2 = 25
+n3 = 100
+critical.t2 = qf(.95, 2, n1 + n2 + n3 - 3 - 1) ^ 2 * (n1 + n2 - 2 - 1) /
+  (2 * (n1 + n2 - 2))
+#critical.t2
+power.t2 = 1 - pf(critical.t2, 2, n1 + n2 - 2 - 1)
+#power.t2
+
+# case iii, p=2
+# delta = 2
+ncp = t(c(sqrt(2 / 2), sqrt(2 / 2))) %*% solve(sigma.2.2) %*% c(sqrt(2 /
+                                                                       2), sqrt(2 / 2))
+power.new_2.t1 = 1 - pf(critical.t1, 2, n1 + n2 - 2 - 1, ncp = ncp)
+power.new_2.t2 = 1 - pf(critical.t2, 2, n1 + n2 - 2 - 1, ncp = ncp)
+# delta = 4
+ncp = t(c(sqrt(4 / 2), sqrt(4 / 2))) %*% solve(sigma.2.2) %*% c(sqrt(4 /
+                                                                       2), sqrt(4 / 2))
+power.new_4.t1 = 1 - pf(critical.t1, 2, n1 + n2 - 2 - 1, ncp = ncp)
+power.new_4.t2 = 1 - pf(critical.t2, 2, n1 + n2 - 2 - 1, ncp = ncp)
+# delta = 8
+ncp = t(c(sqrt(8 / 2), sqrt(8 / 2))) %*% solve(sigma.2.2) %*% c(sqrt(8 /
+                                                                       2), sqrt(8 / 2))
+power.new_8.t1 = 1 - pf(critical.t1, 2, n1 + n2 - 2 - 1, ncp = ncp)
+power.new_8.t2 = 1 - pf(critical.t2, 2, n1 + n2 - 2 - 1, ncp = ncp)
+# delta = 16
+ncp = t(c(sqrt(16 / 2), sqrt(16 / 2))) %*% solve(sigma.2.2) %*% c(sqrt(16 /
+                                                                         2), sqrt(16 / 2))
+power.new_16.t1 = 1 - pf(critical.t1, 2, n1 + n2 - 2 - 1, ncp = ncp)
+power.new_16.t2 = 1 - pf(critical.t2, 2, n1 + n2 - 2 - 1, ncp = ncp)
+
+t12.2.iii = c(power.t1,
+              power.new_2.t1,
+              power.new_4.t1,
+              power.new_8.t1,
+              power.new_16.t1)
+t22.2.iii = c(power.t2,
+              power.new_2.t2,
+              power.new_4.t2,
+              power.new_8.t2,
+              power.new_16.t2)
+
+# case iii, p=3
+# delta = 2
+ncp = t(c(sqrt(2 / 3), sqrt(2 / 3), sqrt(2 / 3))) %*% solve(sigma.3.3) %*%
+  c(sqrt(2 / 3), sqrt(2 / 3), sqrt(2 / 3))
+power.new_2.t1 = 1 - pf(critical.t1, 2, n1 + n2 - 2 - 1, ncp = ncp)
+power.new_2.t2 = 1 - pf(critical.t2, 2, n1 + n2 - 2 - 1, ncp = ncp)
+# delta = 4
+ncp = t(c(sqrt(4 / 3), sqrt(4 / 3), sqrt(4 / 3))) %*% solve(sigma.3.3) %*%
+  c(sqrt(4 / 3), sqrt(4 / 3), sqrt(4 / 3))
+power.new_4.t1 = 1 - pf(critical.t1, 2, n1 + n2 - 2 - 1, ncp = ncp)
+power.new_4.t2 = 1 - pf(critical.t2, 2, n1 + n2 - 2 - 1, ncp = ncp)
+# delta = 8
+ncp = t(c(sqrt(8 / 3), sqrt(8 / 3), sqrt(8 / 3))) %*% solve(sigma.3.3) %*%
+  c(sqrt(8 / 3), sqrt(8 / 3), sqrt(8 / 3))
+power.new_8.t1 = 1 - pf(critical.t1, 2, n1 + n2 - 2 - 1, ncp = ncp)
+power.new_8.t2 = 1 - pf(critical.t2, 2, n1 + n2 - 2 - 1, ncp = ncp)
+# delta = 16
+ncp = t(c(sqrt(16 / 3), sqrt(16 / 3), sqrt(16 / 3))) %*% solve(sigma.3.3) %*%
+  c(sqrt(16 / 3), sqrt(16 / 3), sqrt(16 / 3))
+power.new_16.t1 = 1 - pf(critical.t1, 2, n1 + n2 - 2 - 1, ncp = ncp)
+power.new_16.t2 = 1 - pf(critical.t2, 2, n1 + n2 - 2 - 1, ncp = ncp)
+
+t12.3.iii = c(power.t1,
+              power.new_2.t1,
+              power.new_4.t1,
+              power.new_8.t1,
+              power.new_16.t1)
+t22.3.iii = c(power.t2,
+              power.new_2.t2,
+              power.new_4.t2,
+              power.new_8.t2,
+              power.new_16.t2)
+
+# case iv
+options(digits = 2)
+# compute (1-alpha)th quantile of T_1^2
+n1 = 25
+n2 = 25
+n3 = 100
+critical.t1 = qf(.95, 2, n1 + n2 - 2 - 1) ^ 2 * (n1 + n2 - 2 - 1) / (2 *
+                                                                       (n1 + n2 - 2))
+#critical.t1
+power.t1 = 1 - pf(critical.t1, 2, n1 + n2 - 2 - 1)
+#power.t1
+# compute (1-alpha)th quantile of T_2^2
+n1 = 25
+n2 = 25
+n3 = 100
+critical.t2 = qf(.95, 2, n1 + n2 + n3 - 3 - 1) ^ 2 * (n1 + n2 - 2 - 1) /
+  (2 * (n1 + n2 - 2))
+#critical.t2
+power.t2 = 1 - pf(critical.t2, 2, n1 + n2 - 2 - 1)
+#power.t2
+
+# case iv, p=2
+# delta = 2
+ncp = t(c(sqrt(2 / 2), sqrt(2 / 2))) %*% solve(sigma.2.2) %*% c(sqrt(2 /
+                                                                       2), sqrt(2 / 2))
+power.new_2.t1 = 1 - pf(critical.t1, 2, n1 + n2 - 2 - 1, ncp = ncp)
+power.new_2.t2 = 1 - pf(critical.t2, 2, n1 + n2 - 2 - 1, ncp = ncp)
+# delta = 4
+ncp = t(c(sqrt(4 / 2), sqrt(4 / 2))) %*% solve(sigma.2.2) %*% c(sqrt(4 /
+                                                                       2), sqrt(4 / 2))
+power.new_4.t1 = 1 - pf(critical.t1, 2, n1 + n2 - 2 - 1, ncp = ncp)
+power.new_4.t2 = 1 - pf(critical.t2, 2, n1 + n2 - 2 - 1, ncp = ncp)
+# delta = 8
+ncp = t(c(sqrt(8 / 2), sqrt(8 / 2))) %*% solve(sigma.2.2) %*% c(sqrt(8 /
+                                                                       2), sqrt(8 / 2))
+power.new_8.t1 = 1 - pf(critical.t1, 2, n1 + n2 - 2 - 1, ncp = ncp)
+power.new_8.t2 = 1 - pf(critical.t2, 2, n1 + n2 - 2 - 1, ncp = ncp)
+# delta = 16
+ncp = t(c(sqrt(16 / 2), sqrt(16 / 2))) %*% solve(sigma.2.2) %*% c(sqrt(16 /
+                                                                         2), sqrt(16 / 2))
+power.new_16.t1 = 1 - pf(critical.t1, 2, n1 + n2 - 2 - 1, ncp = ncp)
+power.new_16.t2 = 1 - pf(critical.t2, 2, n1 + n2 - 2 - 1, ncp = ncp)
+
+t12.2.iv = c(power.t1,
+             power.new_2.t1,
+             power.new_4.t1,
+             power.new_8.t1,
+             power.new_16.t1)
+t22.2.iv = c(power.t2,
+             power.new_2.t2,
+             power.new_4.t2,
+             power.new_8.t2,
+             power.new_16.t2)
+
+# case iv, p=3
+# delta = 2
+ncp = t(c(sqrt(2 / 3), sqrt(2 / 3), sqrt(2 / 3))) %*% solve(sigma.3.3) %*%
+  c(sqrt(2 / 3), sqrt(2 / 3), sqrt(2 / 3))
+power.new_2.t1 = 1 - pf(critical.t1, 2, n1 + n2 - 2 - 1, ncp = ncp)
+power.new_2.t2 = 1 - pf(critical.t2, 2, n1 + n2 - 2 - 1, ncp = ncp)
+# delta = 4
+ncp = t(c(sqrt(4 / 3), sqrt(4 / 3), sqrt(4 / 3))) %*% solve(sigma.3.3) %*%
+  c(sqrt(4 / 3), sqrt(4 / 3), sqrt(4 / 3))
+power.new_4.t1 = 1 - pf(critical.t1, 2, n1 + n2 - 2 - 1, ncp = ncp)
+power.new_4.t2 = 1 - pf(critical.t2, 2, n1 + n2 - 2 - 1, ncp = ncp)
+# delta = 8
+ncp = t(c(sqrt(8 / 3), sqrt(8 / 3), sqrt(8 / 3))) %*% solve(sigma.3.3) %*%
+  c(sqrt(8 / 3), sqrt(8 / 3), sqrt(8 / 3))
+power.new_8.t1 = 1 - pf(critical.t1, 2, n1 + n2 - 2 - 1, ncp = ncp)
+power.new_8.t2 = 1 - pf(critical.t2, 2, n1 + n2 - 2 - 1, ncp = ncp)
+# delta = 16
+ncp = t(c(sqrt(16 / 3), sqrt(16 / 3), sqrt(16 / 3))) %*% solve(sigma.3.3) %*%
+  c(sqrt(16 / 3), sqrt(16 / 3), sqrt(16 / 3))
+power.new_16.t1 = 1 - pf(critical.t1, 2, n1 + n2 - 2 - 1, ncp = ncp)
+power.new_16.t2 = 1 - pf(critical.t2, 2, n1 + n2 - 2 - 1, ncp = ncp)
+
+t12.3.iv = c(power.t1,
+             power.new_2.t1,
+             power.new_4.t1,
+             power.new_8.t1,
+             power.new_16.t1)
+t22.3.iv = c(power.t2,
+             power.new_2.t2,
+             power.new_4.t2,
+             power.new_8.t2,
+             power.new_16.t2)
+
+par(mfrow = c(2, 2))
+delta <- c(0, 2, 4, 8, 16)
+plot(
+  delta,
+  t12.2.i,
+  type = "o",
+  col = "red",
+  xlab = "delta",
+  ylab = "power",
+  main = "Graph 2: Sample Size \n 100, 100,100",
+  font.main = 0.5
+)
+lines(t12.3.i, type = "o", col = "blue")
+lines(t22.2.i, type = "o", col = "green")
+lines(t22.3.i, type = "o", col = "black")
+legend(
+  'bottomright',
+  cex = 0.6,
+  c("T12, p=2", "T12, p=3", "T22, p=2", "T22, p=3"),
+  lty = 1,
+  col = c("red", "blue", "green", "black")
+)
+plot(
+  delta,
+  t12.2.ii,
+  type = "o",
+  col = "red",
+  xlab = "delta",
+  ylab = "power",
+  main = "Graph 3: Sample Size \n 25, 100,25",
+  font.main = 0.5
+)
+lines(t12.3.ii, type = "o", col = "blue")
+lines(t22.2.ii, type = "o", col = "green")
+lines(t22.3.ii, type = "o", col = "black")
+legend(
+  'bottomright',
+  cex = 0.6,
+  c("T12, p=2", "T12, p=3", "T22, p=2", "T22, p=3"),
+  lty = 1,
+  col = c("red", "blue", "green", "black")
+)
+plot(
+  delta,
+  t12.2.iii,
+  type = "o",
+  col = "red",
+  xlab = "delta",
+  ylab = "power",
+  main = "Graph 4: Sample Size \n 100, 25,100",
+  font.main = 0.5
+)
+lines(t12.3.iii, type = "o", col = "blue")
+lines(t22.2.iii, type = "o", col = "green")
+lines(t22.3.iii, type = "o", col = "black")
+legend(
+  'bottomright',
+  cex = 0.6,
+  c("T12, p=2", "T12, p=3", "T22, p=2", "T22, p=3"),
+  lty = 1,
+  col = c("red", "blue", "green", "black")
+)
+plot(
+  delta,
+  t12.2.iv,
+  type = "o",
+  col = "red",
+  xlab = "delta",
+  ylab = "power",
+  main = "Graph 5: Sample Size \n 25, 25,100",
+  font.main = 0.5
+)
+lines(t12.3.iv, type = "o", col = "blue")
+lines(t22.2.iv, type = "o", col = "green")
+lines(t22.3.iv, type = "o", col = "black")
+legend(
+  'bottomright',
+  cex = 0.6,
+  c("T12, p=2", "T12, p=3", "T22, p=2", "T22, p=3"),
+  lty = 1,
+  col = c("red", "blue", "green", "black")
+)
+```
+
+## Part 3 Code
+
+```{r, warning=FALSE, eval=FALSE}
+#following part (a) step 1. mu1=mu2=0, mu3 and Sigma.
+library("EnvStats")
+#Multivariate t-distribution. p=2 - T12 Test
+tests.t12.2 <- c()
+generator.t12.2 = function(n1, n2, n3) {
+  mu1 = c(0, 0)
+  mu2 = c(0, 0)
+  sigma2 = sigma.2.2 * (10 - 2) / 10
+  set.seed(625)
+  for (i in 1:1000) {
+    x1 = rmvt(n1,
+              sigma2,
+              df = 10)
+    x2 = rmvt(n2,
+              sigma2,
+              df = 10)
+    x3 = rmvt(n3,
+              sigma2,
+              df = 10)
+    S_pool.2.2 = ((n1 - 1) * cov(x1) + (n2 - 1) * cov(x2)) / (n1 + n2 -
+                                                                2)
+    T1_square = (1 / n1 + 1 / n2) ^ (-1) * t(colMeans(x1) - colMeans(x2)) %*%
+      inv(S_pool.2.2) %*%
+      (colMeans(x1) - colMeans(x2))
+    tests.t12.2[i] = T1_square
+  }
+  return(tests.t12.2)
+}
+#Multivariate t-distribution. p=2 - T22 Test
+tests.t22.2 <- c()
+generator.t22.2 = function(n1, n2, n3) {
+  mu1 = c(0, 0)
+  mu2 = c(0, 0)
+  mu3 = c(10, 10)
+  sigma2 = sigma.2.2 * (10 - 2) / 10
+  set.seed(625)
+  for (i in 1:1000) {
+    x1 = rmvt(n1,
+              sigma2,
+              df = 10)
+    x2 = rmvt(n2,
+              sigma2,
+              df = 10)
+    x3 = rmvt(n3,
+              sigma2,
+              df = 10)
+    S_pool.3.3 = ((n1 - 1) * cov(x1) + (n2 - 1) * cov(x2) + (n3 - 1) * cov(x3)) /
+      (n1 + n2 + n3 - 3)
+    T2_square = (1 / n1 + 1 / n2) ^ (-1) * t(colMeans(x1) - colMeans(x2)) %*%
+      inv(S_pool.3.3) %*%
+      (colMeans(x1) - colMeans(x2))
+    tests.t22.2[i] = T2_square
+  }
+  return(tests.t22.2)
+}
+
+#Multivariate t-distribution. p=3 - T12 Test
+tests.t12.3 <- c()
+generator.t12.3 = function(n1, n2, n3) {
+  mu1 = c(0, 0, 0)
+  mu2 = c(0, 0, 0)
+  sigma3 = sigma.3.3 * (10 - 2) / 10
+  set.seed(625)
+  for (i in 1:1000) {
+    x1 = rmvt(n1,
+              sigma3,
+              df = 10)
+    x2 = rmvt(n2,
+              sigma3,
+              df = 10)
+    x3 = rmvt(n3,
+              sigma3,
+              df = 10)
+    S_pool.2.2 = ((n1 - 1) * cov(x1) + (n2 - 1) * cov(x2)) / (n1 + n2 -
+                                                                2)
+    T1_square = (1 / n1 + 1 / n2) ^ (-1) * t(colMeans(x1) - colMeans(x2)) %*%
+      inv(S_pool.2.2) %*%
+      (colMeans(x1) - colMeans(x2))
+    tests.t12.3[i] = T1_square
+  }
+  return(tests.t12.3)
+}
+#Multivariate t-distribution. p=3 - T22 Test
+tests.t22.3 <- c()
+generator.t22.3 = function(n1, n2, n3) {
+  mu1 = c(0, 0, 0)
+  mu2 = c(0, 0, 0)
+  mu3 = c(10, 10, 10)
+  sigma3 = sigma.3.3 * (10 - 2) / 10
+  set.seed(625)
+  for (i in 1:1000) {
+    x1 = rmvt(n1,
+              sigma3,
+              df = 10)
+    x2 = rmvt(n2,
+              sigma3,
+              df = 10)
+    x3 = rmvt(n3,
+              sigma3,
+              df = 10)
+    S_pool.3.3 = ((n1 - 1) * cov(x1) + (n2 - 1) * cov(x2) + (n3 - 1) * cov(x3)) /
+      (n1 + n2 + n3 - 3)
+    T2_square = (1 / n1 + 1 / n2) ^ (-1) * t(colMeans(x1) - colMeans(x2)) %*%
+      inv(S_pool.3.3) %*%
+      (colMeans(x1) - colMeans(x2))
+    T2_square.all[i] = T2_square
+    tests.t22.3[i] = T2_square
+  }
+  return(tests.t22.3)
+}
+
+#case i: $n_1=n_2=n_3$:
+cat("p=2: ")
+dist_t12.2_1 <- ecdf(generator.t12.2(100, 100, 100))
+summary(dist_t12.2_1)
+dist_t22.2_1 <- ecdf(generator.t22.2(100, 100, 100))
+summary(dist_t22.2_1)
+cat("p=3: ")
+dist_t12.3_1 <- ecdf(generator.t12.3(100, 100, 100))
+summary(dist_t12.3_1)
+dist_t22.3_1 <- ecdf(generator.t22.3(100, 100, 100))
+summary(dist_t22.3_1)
+
+#case ii $n_1<<n_2, n_3=n_1$:
+cat("p=2: ")
+dist_t12.2_2 <- ecdf(generator.t12.2(25, 100, 25))
+summary(dist_t12.2_2)
+dist_t22.2_2 <- ecdf(generator.t22.2(25, 100, 25))
+summary(dist_t22.2_2)
+cat("p=3: ")
+dist_t12.3_2 <- ecdf(generator.t12.3(25, 100, 25))
+summary(dist_t12.3_2)
+dist_t22.3_2 <- ecdf(generator.t22.3(25, 100, 25))
+summary(dist_t22.3_2)
+
+#case iii $n_1>>n_2, n_3=n_1$:
+cat("p=2: ")
+dist_t12.2_3 <- ecdf(generator.t12.2(100, 25, 100))
+summary(dist_t12.2_3)
+dist_t22.2_3 <- ecdf(generator.t22.2(100, 25, 100))
+summary(dist_t22.2_3)
+cat("p=3: ")
+dist_t12.3_3 <- ecdf(generator.t12.3(100, 25, 100))
+summary(dist_t12.3_3)
+dist_t22.3_3 <- ecdf(generator.t22.3(100, 25, 100))
+summary(dist_t22.3_3)
+
+#case iv $n_1=n_2=n, n_3>>n$:
+cat("p=2: ")
+dist_t12.2_4 <- ecdf(generator.t12.2(25, 25, 100))
+summary(dist_t12.2_4)
+dist_t22.2_4 <- ecdf(generator.t22.2(25, 25, 100))
+summary(dist_t22.2_4)
+cat("p=3: ")
+dist_t12.3_4 <- ecdf(generator.t12.3(25, 25, 100))
+summary(dist_t12.3_4)
+dist_t22.3_4 <- ecdf(generator.t22.3(25, 25, 100))
+summary(dist_t22.3_4)
+
+## Summary Results for Multivariate t-distribution
+
+#p = 2 histrograms for Test T12
+library(knitr)
+library(kableExtra)
+par(mfrow = c(2, 4))
+hist(
+  generator.t12.2(100, 100, 100),
+  main = "Multivariate t-Test Test Statistic  \n Sample Size 100, 100,100" ,
+  xlab = "Test Statistic",
+  cex.main = 0.7
+)
+hist(
+  generator.t12.2(25, 100, 25),
+  main = "Multivariate t-Test Test Statistic  \n Sample Size 25, 100,25" ,
+  xlab = "Test Statistic",
+  cex.main = 0.7
+)
+hist(
+  generator.t12.2(100, 25, 100),
+  main = "Multivariate t-Test Test Statistic  \n Sample Size 100, 25,100" ,
+  xlab = "Test Statistic",
+  cex.main = 0.7
+)
+hist(
+  generator.t12.2(25, 25, 100),
+  main = "Multivariate t-Test Test Statistic  \n Sample Size 25, 25,100" ,
+  xlab = "Test Statistic",
+  cex.main = 0.7
+)
+
+#table
+table = as.matrix(cbind(
+  summary(dist_t12.2_1),
+  summary(dist_t12.2_2),
+  summary(dist_t12.2_3),
+  summary(dist_t12.2_4)
+))
+knitr::kable(
+  table,
+  "pipe",
+  col.names = c(
+    "Sample Size 100, 100,100",
+    "Sample Size 25, 100,25",
+    "Sample Size 100, 25,100",
+    "Sample Size 25, 25,100"
+  )
+) %>%
+  kable_styling(latex_options = "HOLD_position")
+
+#p = 2 histrograms for Test T22
+library(knitr)
+library(kableExtra)
+par(mfrow = c(2, 4))
+hist(
+  generator.t22.2(100, 100, 100),
+  main = "Multivariate t-Test Test Statistic \n Sample Size 100, 100,100" ,
+  xlab = "Test Statistic",
+  cex.main = 0.7
+)
+hist(
+  generator.t22.2(25, 100, 25),
+  main = "Multivariate t-Test Test Statistic  \n Sample Size 25, 100,25" ,
+  xlab = "Test Statistic",
+  cex.main = 0.7
+)
+hist(
+  generator.t22.2(100, 25, 100),
+  main = "Multivariate t-Test Test Statistic  \n Sample Size 100, 25,100" ,
+  xlab = "Test Statistic",
+  cex.main = 0.7
+)
+hist(
+  generator.t22.2(25, 25, 100),
+  main = "Multivariate t-Test Test Statistic  \n Sample Size 25, 25,100" ,
+  xlab = "Test Statistic",
+  cex.main = 0.7
+)
+
+#table
+table = as.matrix(cbind(
+  summary(dist_t22.2_1),
+  summary(dist_t22.2_2),
+  summary(dist_t22.2_3),
+  summary(dist_t22.2_4)
+))
+knitr::kable(
+  table,
+  "pipe",
+  col.names = c(
+    "Sample Size 100, 100,100",
+    "Sample Size 25, 100,25",
+    "Sample Size 100, 25,100",
+    "Sample Size 25, 25,100"
+  )
+) %>%
+  kable_styling(latex_options = "HOLD_position")
+
+#p = 3 histrograms for Test T12
+par(mfrow = c(2, 4))
+hist(
+  generator.t12.3(100, 100, 100),
+  main = "Multivariate t-Test Test Statistic \n Sample Size 100, 100,100" ,
+  xlab = "Test Statistic",
+  cex.main = 0.7
+)
+hist(
+  generator.t12.3(25, 100, 25),
+  main = "Multivariate t-Test Test Statistic  \n Sample Size 25, 100,25" ,
+  xlab = "Test Statistic",
+  cex.main = 0.7
+)
+hist(
+  generator.t12.3(100, 25, 100),
+  main = "Multivariate t-Test Test Statistic  \n Sample Size 100, 25,100" ,
+  xlab = "Test Statistic",
+  cex.main = 0.7
+)
+hist(
+  generator.t12.3(25, 25, 100),
+  main = "Multivariate t-Test Test Statistic  \n Sample Size 25, 25,100" ,
+  xlab = "Test Statistic",
+  cex.main = 0.7
+)
+
+#table
+table = as.matrix(cbind(
+  summary(dist_t12.3_1),
+  summary(dist_t12.3_2),
+  summary(dist_t12.3_3),
+  summary(dist_t12.3_4)
+))
+knitr::kable(
+  table,
+  "pipe",
+  col.names = c(
+    "Sample Size 100, 100,100",
+    "Sample Size 25, 100,25",
+    "Sample Size 100, 25,100",
+    "Sample Size 25, 25,100"
+  )
+) %>%
+  kable_styling(latex_options = "HOLD_position")
+
+#p = 3 histrograms for Test T22
+par(mfrow = c(2, 4))
+hist(
+  generator.t22.3(100, 100, 100),
+  main = "Multivariate t-Test Test Statistic \n Sample Size 100, 100,100" ,
+  xlab = "Test Statistic",
+  cex.main = 0.7
+)
+hist(
+  generator.t22.3(25, 100, 25),
+  main = "Multivariate t-Test Test Statistic \n Sample Size 25, 100,25" ,
+  xlab = "Test Statistic",
+  cex.main = 0.7
+)
+hist(
+  generator.t22.3(100, 25, 100),
+  main = "Multivariate t-Test Test Statistic  \n Sample Size 100, 25,100" ,
+  xlab = "Test Statistic",
+  cex.main = 0.7
+)
+hist(
+  generator.t22.3(25, 25, 100),
+  main = "Multivariate t-Test Test Statistic  \n Sample Size 25, 25,100" ,
+  xlab = "Test Statistic",
+  cex.main = 0.7
+)
+
+#table
+table = as.matrix(cbind(
+  summary(dist_t22.3_1),
+  summary(dist_t22.3_2),
+  summary(dist_t22.3_3),
+  summary(dist_t22.3_4)
+))
+knitr::kable(
+  table,
+  "pipe",
+  col.names = c(
+    "Sample Size 100, 100,100",
+    "Sample Size 25, 100,25",
+    "Sample Size 100, 25,100",
+    "Sample Size 25, 25,100"
+  )
+) %>%
+  kable_styling(latex_options = "HOLD_position")
+
+#following part (a) step 1. mu1=mu2=0, mu3 and Sigma.
+#(i) Multivariate laplace distribution. p=2
+library("LaplacesDemon")
+#Multivariate laplace distribution. p=2 - T12 Test
+tests.l12.2 <- c()
+generator.l12.2 = function(n1, n2, n3) {
+  mu1 = c(0, 0)
+  mu2 = c(0, 0)
+  mu3 = c(10, 10)
+  set.seed(625)
+  for (i in 1:1000) {
+    x1 = rmvl(n = n1, mu1, sigma.2.2)
+    x2 = rmvl(n = n2, mu2, sigma.2.2)
+    x3 = rmvl(n = n3, mu3, sigma.2.2)
+    S_pool.2.2 = ((n1 - 1) * cov(x1) + (n2 - 1) * cov(x2)) / (n1 + n2 -
+                                                                2)
+    T1_square = (1 / n1 + 1 / n2) ^ (-1) * t(colMeans(x1) - colMeans(x2)) %*%
+      inv(S_pool.2.2) %*%
+      (colMeans(x1) - colMeans(x2))
+    tests.l12.2[i] = T1_square
+  }
+  return(tests.l12.2)
+}
+#Multivariate laplace distribution. p=2 - T22 Test
+tests.l22.2 <- c()
+generator.l22.2 = function(n1, n2, n3) {
+  mu1 = c(0, 0)
+  mu2 = c(0, 0)
+  mu3 = c(10, 10)
+  set.seed(625)
+  for (i in 1:1000) {
+    x1 = rmvl(n = n1, mu1, sigma.2.2)
+    x2 = rmvl(n = n2, mu2, sigma.2.2)
+    x3 = rmvl(n = n3, mu3, sigma.2.2)
+    S_pool.3.3 = ((n1 - 1) * cov(x1) + (n2 - 1) * cov(x2) + (n3 - 1) * cov(x3)) /
+      (n1 + n2 + n3 - 3)
+    T2_square = (1 / n1 + 1 / n2) ^ (-1) * t(colMeans(x1) - colMeans(x2)) %*%
+      inv(S_pool.3.3) %*%
+      (colMeans(x1) - colMeans(x2))
+    tests.l22.2[i] = T2_square
+  }
+  return(tests.l22.2)
+}
+
+#(i) Multivariate laplace distribution. p=3
+library(QRM)
+#Multivariate t-distribution. p=3 - T12 Test
+tests.l12.3 <- c()
+sigma3 <- eigenmeth(sigma.3.3, delta = 0.00000001)
+generator.l12.3 = function(n1, n2, n3) {
+  mu1 = c(0, 0, 0)
+  mu2 = c(0, 0, 0)
+  mu3 = c(10, 10, 10)
+  set.seed(625)
+  for (i in 1:1000) {
+    x1 = rmvl(n = n1, mu1, round(sigma3, 3))
+    x2 = rmvl(n = n2,  mu2, round(sigma3, 3))
+    x3 = rmvl(n = n3,  mu3, round(sigma3, 3))
+    
+    S_pool.2.2 = ((n1 - 1) * cov(x1) + (n2 - 1) * cov(x2)) / (n1 + n2 -
+                                                                2)
+    T1_square = (1 / n1 + 1 / n2) ^ (-1) * t(colMeans(x1) - colMeans(x2)) %*%
+      inv(S_pool.2.2) %*%
+      (colMeans(x1) - colMeans(x2))
+    tests.l12.3[i] = T1_square
+  }
+  return(tests.l12.3)
+}
+#Multivariate t-distribution. p=3 - T22 Test
+tests.l22.3 <- c()
+generator.l22.3 = function(n1, n2, n3) {
+  mu1 = c(0, 0, 0)
+  mu2 = c(0, 0, 0)
+  mu3 = c(10, 10, 10)
+  set.seed(625)
+  for (i in 1:1000) {
+    x1 = rmvl(n = n1, mu1, round(sigma3, 3))
+    x2 = rmvl(n = n2,  mu2, round(sigma3, 3))
+    x3 = rmvl(n = n3,  mu3, round(sigma3, 3))
+    
+    S_pool.3.3 = ((n1 - 1) * cov(x1) + (n2 - 1) * cov(x2) + (n3 - 1) * cov(x3)) /
+      (n1 + n2 + n3 - 3)
+    T2_square = (1 / n1 + 1 / n2) ^ (-1) * t(colMeans(x1) - colMeans(x2)) %*%
+      inv(S_pool.3.3) %*%
+      (colMeans(x1) - colMeans(x2))
+    T2_square.all[i] = T2_square
+    tests.l22.3[i] = T2_square
+  }
+  return(tests.l22.3)
+}
+
+#case i: $n_1=n_2=n_3$:
+cat("p=2: ")
+dist_l12.2_1 <- ecdf(generator.l12.2(100, 100, 100))
+summary(dist_t12.2_1)
+dist_l22.2_1 <- ecdf(generator.l22.2(100, 100, 100))
+generator.l22.2(100, 100, 100)
+summary(dist_l22.2_1)
+cat("p=3: ")
+dist_l12.3_1 <- ecdf(generator.l12.3(100, 100, 100))
+summary(dist_l12.3_1)
+dist_l22.3_1 <- ecdf(generator.l22.3(100, 100, 100))
+summary(dist_l22.3_1)
+
+#case ii $n_1<<n_2, n_3=n_1$:
+cat("p=2: ")
+dist_l12.2_2 <- ecdf(generator.l12.2(25, 100, 25))
+summary(dist_l12.2_2)
+dist_l22.2_2 <- ecdf(generator.l22.2(25, 100, 25))
+summary(dist_l22.2_2)
+cat("p=3: ")
+dist_l12.3_2 <- ecdf(generator.l12.3(25, 100, 25))
+summary(dist_l12.3_2)
+dist_l22.3_2 <- ecdf(generator.l22.3(25, 100, 25))
+summary(dist_l22.3_2)
+
+#case iii $n_1>>n_2, n_3=n_1$:
+cat("p=2: ")
+dist_l12.2_3 <- ecdf(generator.l12.2(100, 25, 100))
+summary(dist_l12.2_3)
+dist_l22.2_3 <- ecdf(generator.l22.2(100, 25, 100))
+summary(dist_l22.2_3)
+cat("p=3: ")
+dist_l12.3_3 <- ecdf(generator.l12.3(100, 25, 100))
+summary(dist_l12.3_3)
+dist_l22.3_3 <- ecdf(generator.l22.3(100, 25, 100))
+summary(dist_l22.3_3)
+
+#case iv $n_1=n_2=n, n_3>>n$:
+cat("p=2: ")
+dist_l12.2_4 <- ecdf(generator.l12.2(25, 25, 100))
+summary(dist_l12.2_4)
+dist_l22.2_4 <- ecdf(generator.l22.2(25, 25, 100))
+summary(dist_l22.2_4)
+cat("p=3: ")
+dist_l12.3_4 <- ecdf(generator.l12.3(25, 25, 100))
+summary(dist_l12.3_4)
+dist_l22.3_4 <- ecdf(generator.l22.3(25, 25, 100))
+summary(dist_l22.3_4)
+
+## Summary Results for Multivariate Laplace Distribution
+
+#p = 2 histrograms for Test T12
+par(mfrow = c(2, 4))
+hist(
+  generator.l12.2(100, 100, 100),
+  main = "Multivariate Laplace Test Statistic \n Sample Size 100, 100,100" ,
+  xlab = "Test Statistic",
+  cex.main = 0.7
+)
+hist(
+  generator.l12.2(25, 100, 25),
+  main = "Multivariate Laplace Test Statistic  \n Sample Size 25, 100,25" ,
+  xlab = "Test Statistic",
+  cex.main = 0.7
+)
+hist(
+  generator.l12.2(100, 25, 100),
+  main = "Multivariate Laplace Test Statistic \n Sample Size 100, 25,100" ,
+  xlab = "Test Statistic",
+  cex.main = 0.7
+)
+hist(
+  generator.l12.2(25, 25, 100),
+  main = "Multivariate Laplace Test Statistic  \n Sample Size 25, 25,100",
+  xlab = "Test Statistic",
+  cex.main = 0.7
+)
+
+#table
+table = as.matrix(cbind(
+  summary(dist_l12.2_1),
+  summary(dist_l12.2_2),
+  summary(dist_l12.2_3),
+  summary(dist_l12.2_4)
+))
+knitr::kable(
+  table,
+  "pipe",
+  col.names = c(
+    "Sample Size 100, 100,100",
+    "Sample Size 25, 100,25",
+    "Sample Size 100, 25,100",
+    "Sample Size 25, 25,100"
+  )
+) %>%
+  kable_styling(latex_options = "HOLD_position")
+
+#p = 2 histrograms for Test T22
+par(mfrow = c(2, 4))
+hist(
+  generator.l22.2(100, 100, 100),
+  main = "Multivariate Laplace Test Statistic \n Sample Size 100, 100,100",
+  xlab = "Test Statistic",
+  cex.main = 0.7
+)
+hist(
+  generator.l22.2(25, 100, 25),
+  main = "Multivariate Laplace Test Statistic \n Sample Size 25, 100,25" ,
+  xlab = "Test Statistic",
+  cex.main = 0.7
+)
+hist(
+  generator.l22.2(100, 25, 100),
+  main = "Multivariate Laplace Test Statistic \n Sample Size 100, 25,100" ,
+  xlab = "Test Statistic",
+  cex.main = 0.7
+)
+hist(
+  generator.l22.2(25, 25, 100),
+  main = "Multivariate Laplace Test Statistic \n Sample Size 25, 25,100" ,
+  xlab = "Test Statistic",
+  cex.main = 0.7
+)
+
+#table
+table = as.matrix(cbind(
+  summary(dist_l22.2_1),
+  summary(dist_l22.2_2),
+  summary(dist_l22.2_3),
+  summary(dist_l22.2_4)
+))
+knitr::kable(
+  table,
+  "pipe",
+  col.names = c(
+    "Sample Size 100, 100,100",
+    "Sample Size 25, 100,25",
+    "Sample Size 100, 25,100",
+    "Sample Size 25, 25,100"
+  )
+) %>%
+  kable_styling(latex_options = "HOLD_position")
+
+#p = 3 histrograms for Test T12
+par(mfrow = c(2, 4))
+hist(
+  generator.l12.3(100, 100, 100),
+  main = "Multivariate Laplace Test Statistic \n Sample Size 100, 100,100",
+  xlab = "Test Statistic",
+  cex.main = 0.7
+)
+hist(
+  generator.l12.3(25, 100, 25),
+  main = "Multivariate Laplace Test Statistic \n Sample Size 25, 100,25",
+  xlab = "Test Statistic",
+  cex.main = 0.7
+)
+hist(
+  generator.l12.3(100, 25, 100),
+  main = "Multivariate Laplace Test Statistic \n Sample Size 100, 25,100" ,
+  xlab = "Test Statistic",
+  cex.main = 0.7
+)
+hist(
+  generator.l12.3(25, 25, 100),
+  main = "Multivariate Laplace Test Statistic  \n Sample Size 25, 25,100",
+  xlab = "Test Statistic",
+  cex.main = 0.7
+)
+
+#table
+table = as.matrix(cbind(
+  summary(dist_l12.3_1),
+  summary(dist_l12.3_2),
+  summary(dist_l12.3_3),
+  summary(dist_l12.3_4)
+))
+knitr::kable(
+  table,
+  "pipe",
+  col.names = c(
+    "Sample Size 100, 100,100",
+    "Sample Size 25, 100,25",
+    "Sample Size 100, 25,100",
+    "Sample Size 25, 25,100"
+  )
+) %>%
+  kable_styling(latex_options = "HOLD_position")
+
+#p = 3 histrograms for Test T22
+par(mfrow = c(2, 4))
+hist(
+  generator.l22.3(100, 100, 100),
+  main = "Multivariate Laplace Test Statistic \n Sample Size 100, 100,100",
+  xlab = "Test Statistic",
+  cex.main = 0.7
+)
+hist(
+  generator.l22.3(25, 100, 25),
+  main = "Multivariate Laplace Test Statistic  \n Sample Size 25, 100,25",
+  xlab = "Test Statistic",
+  cex.main = 0.7
+)
+hist(
+  generator.l22.3(100, 25, 100),
+  main = "Multivariate Laplace Test Statistic  \n Sample Size 100, 25,100" ,
+  xlab = "Test Statistic",
+  cex.main = 0.7
+)
+hist(
+  generator.l22.3(25, 25, 100),
+  main = "Multivariate Laplace Test Statistic \n Sample Size 25, 25,100" ,
+  xlab = "Test Statistic",
+  cex.main = 0.7
+)
+
+#table
+table = as.matrix(cbind(
+  summary(dist_l22.3_1),
+  summary(dist_l22.3_2),
+  summary(dist_l22.3_3),
+  summary(dist_l22.3_4)
+))
+knitr::kable(
+  table,
+  "pipe",
+  col.names = c(
+    "Sample Size 100, 100,100",
+    "Sample Size 25, 100,25",
+    "Sample Size 100, 25,100",
+    "Sample Size 25, 25,100"
+  )
+) %>%
+  kable_styling(latex_options = "HOLD_position")
+
+########################## QUANTILES FROM PART 3 WITH MULTIVARITATE T DISTRIBUTION #########################
+#Quantiles p = 2 for Test T12 Part 3
+upper.quantile_t12.2_1 = quantile(generator.t12.2(100, 100, 100)[order(generator.t12.2(100, 100, 100))], c(.85, .90, .95, .975, .99, .995))
+upper.quantile_t12.2_2 = quantile(generator.t12.2(25, 100, 25)[order(generator.t12.2(25, 100, 25))], c(.85, .90, .95, .975, .99, .995))
+upper.quantile_t12.2_3 = quantile(generator.t12.2(100, 25, 100)[order(generator.t12.2(100, 25, 100))], c(.85, .90, .95, .975, .99, .995))
+upper.quantile_t12.2_4 = quantile(generator.t12.2(25, 25, 100)[order(generator.t12.2(25, 25, 100))], c(.85, .90, .95, .975, .99, .995))
+#Quantiles p = 2 for Test T22 Part 3
+upper.quantile_t22.2_1 = quantile(generator.t22.2(100, 100, 100)[order(generator.t22.2(100, 100, 100))], c(.85, .90, .95, .975, .99, .995))
+upper.quantile_t22.2_2 = quantile(generator.t22.2(25, 100, 25)[order(generator.t22.2(25, 100, 25))], c(.85, .90, .95, .975, .99, .995))
+upper.quantile_t22.2_3 = quantile(generator.t22.2(100, 25, 100)[order(generator.t22.2(100, 25, 100))], c(.85, .90, .95, .975, .99, .995))
+upper.quantile_t22.2_4 = quantile(generator.t22.2(25, 25, 100)[order(generator.t22.2(25, 25, 100))], c(.85, .90, .95, .975, .99, .995))
+#Quantiles p = 3 for Test T12 Part 3
+upper.quantile_t12.3_1 = quantile(generator.t12.3(100, 100, 100)[order(generator.t12.3(100, 100, 100))], c(.85, .90, .95, .975, .99, .995))
+upper.quantile_t12.3_2 = quantile(generator.t12.3(25, 100, 25)[order(generator.t12.3(25, 100, 25))], c(.85, .90, .95, .975, .99, .995))
+upper.quantile_t12.3_3 = quantile(generator.t12.3(100, 25, 100)[order(generator.t12.3(100, 25, 100))], c(.85, .90, .95, .975, .99, .995))
+upper.quantile_t12.3_4 = quantile(generator.t12.3(25, 25, 100)[order(generator.t12.3(25, 25, 100))], c(.85, .90, .95, .975, .99, .995))
+#Quantiles p = 3 for Test T22 Part 3
+upper.quantile_t22.3_1 = quantile(generator.t22.3(100, 100, 100)[order(generator.t22.3(100, 100, 100))], c(.85, .90, .95, .975, .99, .995))
+upper.quantile_t22.3_2 = quantile(generator.t22.3(25, 100, 25)[order(generator.t22.3(25, 100, 25))], c(.85, .90, .95, .975, .99, .995))
+upper.quantile_t22.3_3 = quantile(generator.t22.3(100, 25, 100)[order(generator.t22.3(100, 25, 100))], c(.85, .90, .95, .975, .99, .995))
+upper.quantile_t22.3_4 = quantile(generator.t22.3(25, 25, 100)[order(generator.t22.3(25, 25, 100))], c(.85, .90, .95, .975, .99, .995))
+
+########################## QUANTILES FROM PART 3 WITH LAPLACE DISTRIBUTION #########################
+#Quantiles p = 2 for Test T12 Part 3
+upper.quantile_l12.2_1 = quantile(generator.l12.2(100, 100, 100)[order(generator.l12.2(100, 100, 100))], c(.85, .90, .95, .975, .99, .995))
+upper.quantile_l12.2_2 = quantile(generator.l12.2(25, 100, 25)[order(generator.l12.2(25, 100, 25))], c(.85, .90, .95, .975, .99, .995))
+upper.quantile_l12.2_3 = quantile(generator.l12.2(100, 25, 100)[order(generator.l12.2(100, 25, 100))], c(.85, .90, .95, .975, .99, .995))
+upper.quantile_l12.2_4 = quantile(generator.l12.2(25, 25, 100)[order(generator.l12.2(25, 25, 100))], c(.85, .90, .95, .975, .99, .995))
+#Quantiles p = 2 for Test T22 Part 3
+upper.quantile_l22.2_1 = quantile(generator.l22.2(100, 100, 100)[order(generator.l22.2(100, 100, 100))], c(.85, .90, .95, .975, .99, .995))
+upper.quantile_l22.2_2 = quantile(generator.l22.2(25, 100, 25)[order(generator.l22.2(25, 100, 25))], c(.85, .90, .95, .975, .99, .995))
+upper.quantile_l22.2_3 = quantile(generator.l22.2(100, 25, 100)[order(generator.l22.2(100, 25, 100))], c(.85, .90, .95, .975, .99, .995))
+upper.quantile_l22.2_4 = quantile(generator.l22.2(25, 25, 100)[order(generator.l22.2(25, 25, 100))], c(.85, .90, .95, .975, .99, .995))
+#Quantiles p = 3 for Test T12 Part 3
+upper.quantile_l12.3_1 = quantile(generator.l12.3(100, 100, 100)[order(generator.l12.3(100, 100, 100))], c(.85, .90, .95, .975, .99, .995))
+upper.quantile_l12.3_2 = quantile(generator.l12.3(25, 100, 25)[order(generator.l12.3(25, 100, 25))], c(.85, .90, .95, .975, .99, .995))
+upper.quantile_l12.3_3 = quantile(generator.l12.3(100, 25, 100)[order(generator.l12.3(100, 25, 100))], c(.85, .90, .95, .975, .99, .995))
+upper.quantile_l12.3_4 = quantile(generator.l12.3(25, 25, 100)[order(generator.l12.3(25, 25, 100))], c(.85, .90, .95, .975, .99, .995))
+#Quantiles p = 3 for Test T22 Part 3
+upper.quantile_l22.3_1 = quantile(generator.l22.3(100, 100, 100)[order(generator.l22.3(100, 100, 100))], c(.85, .90, .95, .975, .99, .995))
+upper.quantile_l22.3_2 = quantile(generator.l22.3(25, 100, 25)[order(generator.l22.3(25, 100, 25))], c(.85, .90, .95, .975, .99, .995))
+upper.quantile_l22.3_3 = quantile(generator.l22.3(100, 25, 100)[order(generator.l22.3(100, 25, 100))], c(.85, .90, .95, .975, .99, .995))
+upper.quantile_l22.3_4 = quantile(generator.l22.3(25, 25, 100)[order(generator.l22.3(25, 25, 100))], c(.85, .90, .95, .975, .99, .995))
+```
+
+## Part 4 Code
+
+```{r, warning=FALSE, eval=FALSE}
+#MVN
+# CASE 1
+s = qchisq(c(.85, .90, .95, .975, .99, .995), df = 2)
+bias_n12.2_1 = upper.quantile_t12_1.1 - s
+RB_n12.2_1 = bias_n12.2_1 / s * 100
+# CASE 2
+bias_n12.2_2 = upper.quantile_t12_2.1 - s
+RB_n12.2_2 = bias_n12.2_2 / s * 100
+# CASE 3
+bias_n12.2_3 = upper.quantile_t12_3.1 - s
+RB_n12.2_3 = bias_n12.2_3 / s * 100
+# CASE 4
+bias_n12.2_4 = upper.quantile_t12_4.1 - s
+RB_n12.2_4 = bias_n12.2_4 / s * 100
+
+table <- cbind(
+  bias_n12.2_1,
+  RB_n12.2_1,
+  bias_n12.2_2,
+  RB_n12.2_2,
+  bias_n12.2_3,
+  RB_n12.2_3,
+  bias_n12.2_4,
+  RB_n12.2_4
+)
+knitr::kable(
+  table,
+  col.names = c("Bias", "RB", "Bias", "RB", "Bias", "RB", "Bias", "RB"),
+  caption = "Bias and RB for $T_1^2$ Test where p = 2 for Multivariate Normal Distribution"
+) %>%
+  add_header_above(
+    c(
+      " " = 1,
+      "Sample Size 100, 100,100" = 2,
+      "Sample Size 25, 100, 25" = 2,
+      "Sample Size 100, 25, 100" = 2,
+      "Sample Size 25, 25, 100" = 2
+    )
+  ) %>%
+  kable_styling(latex_options = "HOLD_position")
+
+# CASE 1
+s = qchisq(c(.85, .90, .95, .975, .99, .995), df = 3)
+bias_n12.3_1 = upper.quantile_t12_1.2 - s
+RB_n12.3_1 = bias_n12.3_1 / s * 100
+# CASE 2
+bias_n12.3_2 = upper.quantile_t12_2.2 - s
+RB_n12.3_2 = bias_n12.3_2 / s * 100
+# CASE 3
+bias_n12.3_3 = upper.quantile_t12_3.2 - s
+RB_n12.3_3 = bias_n12.3_3 / s * 100
+# CASE 4
+bias_n12.3_4 = upper.quantile_t12_4.2 - s
+RB_n12.3_4 = bias_n12.3_4 / s * 100
+
+table <- cbind(
+  bias_n12.3_1,
+  RB_n12.3_1,
+  bias_n12.3_2,
+  RB_n12.3_2,
+  bias_n12.3_3,
+  RB_n12.3_3,
+  bias_n12.3_4,
+  RB_n12.3_4
+)
+knitr::kable(
+  table,
+  col.names = c("Bias", "RB", "Bias", "RB", "Bias", "RB", "Bias", "RB"),
+  caption = "Bias and RB for $T_1^2$ Test where p = 3 for Multivariate Normal Distribution"
+) %>%
+  add_header_above(
+    c(
+      " " = 1,
+      "Sample Size 100, 100,100" = 2,
+      "Sample Size 25, 100, 25" = 2,
+      "Sample Size 100, 25, 100" = 2,
+      "Sample Size 25, 25, 100" = 2
+    )
+  ) %>%
+  kable_styling(latex_options = "HOLD_position")
+
+# CASE 1
+s = qchisq(c(.85, .90, .95, .975, .99, .995), df = 2)
+bias_n22.2_1 = upper.quantile_t22_1.1 - s
+RB_n22.2_1 = bias_n22.2_1 / s * 100
+# CASE 2
+bias_n22.2_2 = upper.quantile_t22_2.1 - s
+RB_n22.2_2 = bias_n22.2_2 / s * 100
+# CASE 3
+bias_n22.2_3 = upper.quantile_t22_3.1 - s
+RB_n22.2_3 = bias_n22.2_3 / s * 100
+# CASE 4
+bias_n22.2_4 = upper.quantile_t22_4.1 - s
+RB_n22.2_4 = bias_n22.2_4 / s * 100
+
+table <- cbind(
+  bias_n22.2_1,
+  RB_n22.2_1,
+  bias_n22.2_2,
+  RB_n22.2_2,
+  bias_n22.2_3,
+  RB_n22.2_3,
+  bias_n22.2_4,
+  RB_n22.2_4
+)
+knitr::kable(
+  table,
+  col.names = c("Bias", "RB", "Bias", "RB", "Bias", "RB", "Bias", "RB"),
+  caption = "Bias and RB for $T_2^2$ Test where p = 2 for Multivariate Normal Distribution"
+) %>%
+  add_header_above(
+    c(
+      " " = 1,
+      "Sample Size 100, 100,100" = 2,
+      "Sample Size 25, 100, 25" = 2,
+      "Sample Size 100, 25, 100" = 2,
+      "Sample Size 25, 25, 100" = 2
+    )
+  ) %>%
+  kable_styling(latex_options = "HOLD_position")
+
+# CASE 1
+s = qchisq(c(.85, .90, .95, .975, .99, .995), df = 3)
+bias_n22.3_1 = upper.quantile_t22_1.2 - s
+RB_n22.3_1 = bias_n22.3_1 / s * 100
+# CASE 2
+bias_n22.3_2 = upper.quantile_t22_2.2 - s
+RB_n22.3_2 = bias_n22.3_2 / s * 100
+# CASE 3
+bias_n22.3_3 = upper.quantile_t22_3.2 - s
+RB_n22.3_3 = bias_n22.3_3 / s * 100
+# CASE 4
+bias_n22.3_4 = upper.quantile_t22_4.2 - s
+RB_n22.3_4 = bias_n22.3_4 / s * 100
+
+# CASE 1
+s = qchisq(c(.85, .90, .95, .975, .99, .995), df = 2)
+bias_t12.2_1 = upper.quantile_t12.2_1 - s
+RB_t12.2_1 = bias_t12.2_1 / s * 100
+# CASE 2
+bias_t12.2_2 = upper.quantile_t12.2_2 - s
+RB_t12.2_2 = bias_t12.2_2 / s * 100
+# CASE 3
+bias_t12.2_3 = upper.quantile_t12.2_3 - s
+RB_t12.2_3 = bias_t12.2_3 / s * 100
+# CASE 4
+bias_t12.2_4 = upper.quantile_t12.2_4 - s
+RB_t12.2_4 = bias_t12.2_4 / s * 100
+
+table <- cbind(
+  bias_t12.2_1,
+  RB_t12.2_1,
+  bias_t12.2_2,
+  RB_t12.2_2,
+  bias_t12.2_3,
+  RB_t12.2_3,
+  bias_t12.2_4,
+  RB_t12.2_4
+)
+knitr::kable(
+  table,
+  col.names = c("Bias", "RB", "Bias", "RB", "Bias", "RB", "Bias", "RB"),
+  caption = "Bias and RB for $T_1^2$ Test where p = 2 for Multivariate T Distribution"
+) %>%
+  add_header_above(
+    c(
+      " " = 1,
+      "Sample Size 100, 100,100" = 2,
+      "Sample Size 25, 100, 25" = 2,
+      "Sample Size 100, 25, 100" = 2,
+      "Sample Size 25, 25, 100" = 2
+    )
+  ) %>%
+  kable_styling(latex_options = "HOLD_position")
+
+# CASE 1
+s = qchisq(c(.85, .90, .95, .975, .99, .995), df = 3)
+bias_t12.3_1 = upper.quantile_t12.3_1 - s
+RB_t12.3_1 = bias_t12.3_1 / s * 100
+# CASE 2
+bias_t12.3_2 = upper.quantile_t12.3_2 - s
+RB_t12.3_2 = bias_t12.3_2 / s * 100
+# CASE 3
+bias_t12.3_3 = upper.quantile_t12.3_3 - s
+RB_t12.3_3 = bias_t12.3_3 / s * 100
+# CASE 4
+bias_t12.3_4 = upper.quantile_t12.3_4 - s
+RB_t12.3_4 = bias_t12.3_4 / s * 100
+
+# CASE 1
+s = qchisq(c(.85, .90, .95, .975, .99, .995), df = 2)
+bias_t22.2_1 = upper.quantile_t22.2_1 - s
+RB_t22.2_1 = bias_t22.2_1 / s * 100
+# CASE 2
+bias_t22.2_2 = upper.quantile_t22.2_2 - s
+RB_t22.2_2 = bias_t22.2_2 / s * 100
+# CASE 3
+bias_t22.2_3 = upper.quantile_t22.2_3 - s
+RB_t22.2_3 = bias_t22.2_3 / s * 100
+# CASE 4
+bias_t22.2_4 = upper.quantile_t22.2_4 - s
+RB_t22.2_4 = bias_t22.2_4 / s * 100
+
+table <- cbind(
+  bias_t22.2_1,
+  RB_t22.2_1,
+  bias_t22.2_2,
+  RB_t22.2_2,
+  bias_t22.2_3,
+  RB_t22.2_3,
+  bias_t22.2_4,
+  RB_t22.2_4
+)
+knitr::kable(
+  table,
+  col.names = c("Bias", "RB", "Bias", "RB", "Bias", "RB", "Bias", "RB"),
+  caption = "Bias and RB for $T_2^2$ Test where p = 2 for Multivariate T Distribution"
+) %>%
+  add_header_above(
+    c(
+      " " = 1,
+      "Sample Size 100, 100,100" = 2,
+      "Sample Size 25, 100, 25" = 2,
+      "Sample Size 100, 25, 100" = 2,
+      "Sample Size 25, 25, 100" = 2
+    )
+  ) %>%
+  kable_styling(latex_options = "HOLD_position")
+
+# CASE 1
+s = qchisq(c(.85, .90, .95, .975, .99, .995), df = 3)
+bias_t22.3_1 = upper.quantile_t22.3_1 - s
+RB_t22.3_1 = bias_t22.3_1 / s * 100
+# CASE 2
+bias_t22.3_2 = upper.quantile_t22.3_2 - s
+RB_t22.3_2 = bias_t22.3_2 / s * 100
+# CASE 3
+bias_t22.3_3 = upper.quantile_t22.3_3 - s
+RB_t22.3_3 = bias_t22.3_3 / s * 100
+# CASE 4
+bias_t22.3_4 = upper.quantile_t22.3_4 - s
+RB_t22.3_4 = bias_t22.3_4 / s * 100
+
+# CASE 1
+s = qchisq(c(.85, .90, .95, .975, .99, .995), df = 2)
+bias_l12.2_1 = upper.quantile_l12.2_1 - s
+RB_l12.2_1 = bias_l12.2_1 / s * 100
+# CASE 2
+bias_l12.2_2 = upper.quantile_l12.2_2 - s
+RB_l12.2_2 = bias_l12.2_2 / s * 100
+# CASE 3
+bias_l12.2_3 = upper.quantile_l12.2_3 - s
+RB_l12.2_3 = bias_l12.2_3 / s * 100
+# CASE 4
+bias_l12.2_4 = upper.quantile_l12.2_4 - s
+RB_l12.2_4 = bias_l12.2_4 / s * 100
+
+table <- cbind(
+  bias_l12.2_1,
+  RB_l12.2_1,
+  bias_l12.2_2,
+  RB_l12.2_2,
+  bias_l12.2_3,
+  RB_l12.2_3,
+  bias_l12.2_4,
+  RB_l12.2_4
+)
+knitr::kable(
+  table,
+  col.names = c("Bias", "RB", "Bias", "RB", "Bias", "RB", "Bias", "RB"),
+  caption = "Bias and RB for $T_1^2$ Test where p = 2 for Multivariate Laplace Distribution"
+) %>%
+  add_header_above(
+    c(
+      " " = 1,
+      "Sample Size 100, 100,100" = 2,
+      "Sample Size 25, 100, 25" = 2,
+      "Sample Size 100, 25, 100" = 2,
+      "Sample Size 25, 25, 100" = 2
+    )
+  ) %>%
+  kable_styling(latex_options = "HOLD_position")
+
+# CASE 1
+s = qchisq(c(.85, .90, .95, .975, .99, .995), df = 3)
+bias_l12.3_1 = upper.quantile_l12.3_1 - s
+RB_l12.3_1 = bias_l12.3_1 / s
+# CASE 2
+bias_l12.3_2 = upper.quantile_l12.3_2 - s
+RB_l12.3_2 = bias_l12.3_2 / s * 100
+# CASE 3
+bias_l12.3_3 = upper.quantile_l12.3_3 - s
+RB_l12.3_3 = bias_l12.3_3 / s * 100
+# CASE 4
+bias_l12.3_4 = upper.quantile_l12.3_4 - s
+RB_l12.3_4 = bias_l12.3_4 / s * 100
+
+# Use Multivariate Laplace distribution for asymptotic approximation. Below are the bias results for $T_2^2$ Test where p = 2
+# CASE 1
+s = qchisq(c(.85, .90, .95, .975, .99, .995), df = 2)
+bias_l22.2_1 = upper.quantile_l22.2_1 - s
+RB_l22.2_1 = bias_l22.2_1 / s * 100
+# CASE 2
+bias_l22.2_2 = upper.quantile_l22.2_2 - s
+RB_l22.2_2 = bias_l22.2_2 / s * 100
+# CASE 3
+bias_l22.2_3 = upper.quantile_l22.2_3 - s
+RB_l22.2_3 = bias_l22.2_3 / s * 100
+# CASE 4
+bias_l22.2_4 = upper.quantile_l22.2_4 - s
+RB_l22.2_4 = bias_l22.2_4 / s * 100
+
+table <- cbind(
+  bias_l22.2_1,
+  RB_l22.2_1,
+  bias_l22.2_2,
+  RB_l22.2_2,
+  bias_l22.2_3,
+  RB_l22.2_3,
+  bias_l22.2_4,
+  RB_l22.2_4
+)
+knitr::kable(
+  table,
+  col.names = c("Bias", "RB", "Bias", "RB", "Bias", "RB", "Bias", "RB"),
+  caption = "Bias and RB for $T_2^2$ Test where p = 2 for Multivariate Laplace Distribution"
+) %>%
+  add_header_above(
+    c(
+      " " = 1,
+      "Sample Size 100, 100,100" = 2,
+      "Sample Size 25, 100, 25" = 2,
+      "Sample Size 100, 25, 100" = 2,
+      "Sample Size 25, 25, 100" = 2
+    )
+  ) %>%
+  kable_styling(latex_options = "HOLD_position")
+
+# Use Multivariate Laplace distribution for asymptotic approximation. Below are the bias results for $T_2^2$ Test where p = 3.
+# CASE 1
+s = qchisq(c(.85, .90, .95, .975, .99, .995), df = 3)
+bias_l22.3_1 = upper.quantile_l22.3_1 - s
+RB_l22.3_1 = bias_l22.3_1 / s * 100
+# CASE 2
+bias_l22.3_2 = upper.quantile_l22.3_2 - s
+RB_l22.3_2 = bias_l22.3_2 / s * 100
+# CASE 3
+bias_l22.3_3 = upper.quantile_l22.3_3 - s
+RB_l22.3_3 = bias_l22.3_3 / s * 100
+# CASE 4
+bias_l22.3_4 = upper.quantile_l22.3_4 - s
+RB_l22.3_4 = bias_l22.3_4 / s * 100
+```

@@ -1,0 +1,157 @@
+---
+title: "stat-633-a3"
+output: pdf_document
+date: "`r Sys.Date()`"
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## question 1
+### part a)
+
+```{r}
+library(KMsurv)
+library(survival)
+data(burn)
+data = burn
+head(data,1)
+coxph.fit = coxph(Surv(T3, D3)~factor(Z1), data = data, method = 'breslow')
+summary(coxph.fit)
+s = summary(coxph.fit)
+# wald test
+betahat=s$coefficients[1,1]
+se_beta=s$coefficients[1,3]
+z_stat=betahat/se_beta
+p.val=2*(1-pnorm(abs(z_stat)))
+cat("Wald Z-Test Statistics = ", z_stat, "\n")
+cat("p-value of the Wald test = ", p.val, "\n")
+```
+
+Since the $p-value>0.05=\alpha$, we failed to reject the null hypothesis, meaning that there is a difference between the distributions of the times to staphylococcus infection in the two disinfectant groups.
+
+\pagebreak
+
+### part b)
+
+```{r}
+library(KMsurv)
+library(survival)
+data = burn
+head(data,1)
+coxph.fit = coxph(Surv(T3, D3)~factor(Z1)+Z4, data = data, method = 'breslow')
+summary(coxph.fit)
+s = summary(coxph.fit)
+# wald test
+betahat=s$coefficients[1,1]
+se_beta=s$coefficients[1,3]
+z_stat=betahat/se_beta
+p.val=2*(1-pnorm(abs(z_stat)))
+cat("Wald Z-Test Statistics = ", z_stat, "\n")
+cat("p-value of the Wald test = ", p.val, "\n")
+```
+
+Since the $0.07=p-value>0.05=\alpha$, we failed to reject the null hypothesis, meaning that there is a difference between the distributions of the times to staphylococcus infection in the two disinfectant groups, adjusting for the total area burned.
+
+We can also find that adding the adjustment of total area burned, the estimate of $beta$ and its standard error are also changed as well as the wald test statistics. This makes sense as now we have one additional variable needs to be considered in the model, and total area burned also influcence the fitted value as well. 
+
+\pagebreak
+### part c)
+
+```{r}
+library(KMsurv)
+library(survival)
+data = burn
+head(data,1)
+# Adjust for gender
+coxph.fit2 = coxph(Surv(T3, D3)~factor(Z1)+factor(Z2), data = data, method = 'breslow')
+summary(coxph.fit2)
+s = summary(coxph.fit2)
+# wald test
+betahat=s$coefficients[1,1]
+se_beta=s$coefficients[1,3]
+z_stat=betahat/se_beta
+p.val=2*(1-pnorm(abs(z_stat)))
+cat("Wald Z-Test Statistics = ", z_stat, "\n")
+# If the p-value is less than 0.05, we reject the null hypothesis
+cat("p-value of the Wald test = ", p.val, "\n")
+
+# Adjust for race
+coxph.fit3 = coxph(Surv(T3, D3)~factor(Z1)+factor(Z3), data = data, method = 'breslow')
+summary(coxph.fit3)
+s = summary(coxph.fit3)
+# wald test
+betahat=s$coefficients[1,1]
+se_beta=s$coefficients[1,3]
+z_stat=betahat/se_beta
+p.val=2*(1-pnorm(abs(z_stat)))
+cat("Wald Z-Test Statistics = ", z_stat, "\n")
+# If the p-value is less than 0.05, we reject the null hypothesis
+cat("p-value of the Wald test = ", p.val, "\n")
+
+# Adjust for total surface area burned
+coxph.fit11 = coxph(Surv(T3, D3)~factor(Z1)+Z4, data = data, method = 'breslow')
+summary(coxph.fit11)
+s = summary(coxph.fit11)
+# wald test
+betahat=s$coefficients[1,1]
+se_beta=s$coefficients[1,3]
+z_stat=betahat/se_beta
+p.val=2*(1-pnorm(abs(z_stat)))
+cat("Wald Z-Test Statistics = ", z_stat, "\n")
+# If the p-value is less than 0.05, we reject the null hypothesis
+cat("p-value of the Wald test = ", p.val, "\n")
+
+# Adjust for type of burn
+coxph.fit11 = coxph(Surv(T3, D3)~factor(Z1)+factor(Z11), data = data, method = 'breslow')
+summary(coxph.fit11)
+s = summary(coxph.fit11)
+# wald test
+betahat=s$coefficients[1,1]
+se_beta=s$coefficients[1,3]
+z_stat=betahat/se_beta
+p.val=2*(1-pnorm(abs(z_stat)))
+cat("Wald Z-Test Statistics = ", z_stat, "\n")
+# If the p-value is less than 0.05, we reject the null hypothesis
+cat("p-value of the Wald test = ", p.val, "\n")
+```
+
+\pagebreak
+### part d)
+
+```{r}
+# forward selection
+upper.model = coxph(Surv(T3, D3)~factor(Z1)+factor(Z2)+factor(Z3)+Z4+factor(Z11), 
+                    data = data, method = 'breslow')
+null.model = coxph(Surv(T3, D3)~factor(Z1), data = data, method = 'breslow')
+
+library(MASS)
+forward = stepAIC(null.model, direction = 'forward', 
+                  scope = list(lower = null.model, upper = upper.model), 
+                  test = 'Chisq', alpha = 0.05)
+summary(forward)
+```
+
+Initial: we have $Z1$ variable.
+
+First variable to be added: $Z3$ as its p-value is the smallest with the value of 0.0017.
+
+Second variable to be added: $Z11$ as its p-value is the smallest with the value of 0.047.
+
+When we try to add the third variable, none of the candidate variables has the p-value less than 0.05, therefore, we terminate the process of adding variables. 
+
+So, we have the proposed model with __Disinfectant__, __Type of Burn__ and __Race__
+
+```{r}
+my.model = coxph(Surv(T3, D3)~factor(Z1)+factor(Z3)+factor(Z11), data = data, method = 'breslow')
+summary(my.model)
+```
+
+The local Wald test of the primary hypothesis of no difference between the times to staphylococcus infection for the two disinfectant groups has a p-value of 0.044, which suggests that the times to staphylococcus infection are different for the two disinfectant groups after adjustment for the type of the burn and race of the patient.
+
+\pagebreak
+
+## question 2
+
+See hand written solution

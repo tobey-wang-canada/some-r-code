@@ -1,0 +1,722 @@
+---
+title: "stat633 A2"
+output: pdf_document
+date: "2023-03-02"
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## Question 1
+
+### part a)
+
+```{r}
+library(survival)
+library(KMsurv)
+data(burn)
+group = burn$Z1 # Treatment: 0-routine bathing 1-Body cleansing
+survtime = burn$T3
+indicator = burn$D3
+fit = survfit(Surv(survtime, indicator)~group)
+```
+
+```{r}
+# One can check standard error using summary(fit)$std.err
+print(summary(fit))
+```
+
+\pagebreak
+
+### part b)
+
+```{r}
+fitNA = survfit(Surv(survtime, indicator)~group, ctype = 1)
+# One can check standard error using summary(fitNA)$std.err
+summary(fitNA)
+plot(fitNA, lwd=2, lty=2, conf.int=FALSE, mark.time=TRUE, cex=2, cex.lab=1.4,
+     cumhaz = TRUE, col=c("black", "blue"), xlab="Time", ylab="Cumulative Hazard",
+     main="The Cumulative Hazard estimates", ylim=c(0,1.5))
+legend("topright",c("group 0-routine bathing", "group 1-body cleansing"),lty=c(2), 
+       col=c("black", "blue"), cex=0.8)
+```
+
+```{r}
+# check the proportionality hazard assumption
+plot(fit, fun = "cloglog", xlab = "Time using log", ylab = "log-log survival", 
+     main = "log-log curves by type")
+```
+
+__Looking at the plot it seems that it seems that the proportional hazards assumption is not satisfied.__
+
+\pagebreak
+
+### part c)
+
+```{r}
+summary(fit)
+```
+
+__Note: the estimate of the median time to infection for group 1-body cleansing with chlorhexidine is not defined/observed, so only estimate of the median time to infection for group 0-routine bathing with povidone-iodine is shown below, as well as 95% confidence interval__
+
+Linear: 
+```{r}
+fit.km.burn.routine = survfit(Surv(survtime, indicator)~1, 
+                              conf.type="plain", data = burn, subset=(group=="0"))
+print(fit.km.burn.routine)
+```
+
+Log transformation:
+
+```{r}
+fit.km.burn.routine = survfit(Surv(survtime, indicator)~1, 
+                              conf.type="log-log", data = burn, subset=(group=="0"))
+print(fit.km.burn.routine)
+```
+
+Arcsine:
+
+```{r}
+fit.km.burn.routine = survfit(Surv(survtime, indicator)~1, 
+                              conf.type="arcsin", data = burn, subset=(group=="0"))
+print(fit.km.burn.routine)
+```
+
+\pagebreak
+
+### part d)
+
+```{r}
+alpha=0.05
+critical.Z=qnorm(1-alpha/2)
+KMPCIestimator <- function (Z,delta){ 
+  UZ<-unique(Z) #Unique observed times;
+  N<-length(UZ)
+  UZ.order<-order(UZ)
+  UZ<-UZ[UZ.order] #sort data;
+  KM <- rep(0,N)
+  Y<-rep(0,N)
+  D<-rep(0,N)
+  D[1]<-sum(Z[delta==1]==UZ[1])
+  Y[1]<-sum(Z >= UZ[1])
+  KM[1] <- 1-D[1]/Y[1] #this is for right continuous value
+  for (i in 2: N){
+    D[i]<-sum(Z[delta==1]==UZ[i])
+    Y[i]<-sum(Z >= UZ[i])
+    KM[i] <- KM[i-1]*(1-D[i]/Y[i])
+  }
+  # Calculate variance and standard error;
+  sigma2.s<-rep(0,N)
+  for (i in 1: N){
+    ## sigma2.s[i]<-sum( (UZ<=UZ[i])*(D/(Y*(Y-D))) ) #old version
+    sigma2.s[i]<-sum( (UZ[1:i]<=UZ[i])*(D[1:i]/(Y[1:i]*(Y[1:i]-D[1:i]))))
+    ## Note the data is sorted by UZ;
+    ## Using this to avoid NaN for times smaller than the largest observation;
+  }
+  KM.var<-KM^2*sigma2.s
+  KM.se<-sqrt(KM.var)
+  sigma.s<-sqrt(sigma2.s)
+  # 100(1-alpha)% linear confidence interval;
+  ###according to lecture note in chapter 4 p36
+  linearL<-KM-critical.Z*sigma.s*KM
+  linearU<-KM+critical.Z*sigma.s*KM
+  # 100(1-alpha)% log-transformed confidence interval;
+  theta<-exp((critical.Z*sigma.s)/log(KM))
+  ###according to lecture note in chapter 4 p37
+  logtransL<-KM^(1/theta)
+  logtransU<-KM^theta
+  # 100(1-alpha)% arcsine-square-root-transformed confidence interval;
+  ###according to lecture note in chapter 4 p38
+  ass<-asin(KM^(1/2))
+  zss<-critical.Z*sigma.s*(KM/(1-KM))^(1/2)
+  azssL<-ass-0.5*zss
+  azssU<-ass+0.5*zss
+  asrtransL<-(sin(pmax(0,azssL)))^2
+  asrtransU<-(sin(pmin(pi/2,azssU)))^2
+  Full<-data.frame(UZ,D,Y,KM,sigma2.s,KM.var,KM.se)
+  Reduced<-subset(Full, (Full$D>0))
+  PCI.full<-data.frame(UZ,D,linearL, linearU, logtransL, logtransU, asrtransL, asrtransU)
+  PCI.reduced<-subset(PCI.full, (PCI.full$D>0))
+  list(Full, Reduced, PCI.full, PCI.reduced)
+}
+
+```
+
+```{r}
+# for Group 0-routine bathing
+group = burn$Z1 # Treatment: 0-routine bathing 1-Body cleansing
+workdata = burn[burn$Z1==0,]
+survtime = workdata$T3
+indicator = workdata$D3
+KMPCI.est<-KMPCIestimator(survtime, indicator)
+subset(KMPCI.est[[3]], (KMPCI.est[[3]]$UZ == 10))
+```
+
+```{r}
+# for Group 1-Body cleansing
+group = burn$Z1 # Treatment: 0-routine bathing 1-Body cleansing
+workdata = burn[burn$Z1==1,]
+survtime = workdata$T3
+indicator = workdata$D3
+KMPCI.est<-KMPCIestimator(survtime, indicator)
+subset(KMPCI.est[[3]], (KMPCI.est[[3]]$UZ == 10))
+```
+
+\pagebreak
+
+### part e)
+
+__\textcolor{red}{For Group 0-routine bathing:}__
+
+1. Recall distinct event times at $t=1,3,4,...8,..19,21,...,51$
+
+2. So $\hat{\sigma_s}^2(8)=\hat{\sigma_s}^2(8)$ and $\hat{\sigma_s}^2(20)=\hat{\sigma_s}^2(19)$
+
+3. need to plugin values into this equation: $\frac{\hat{V}(\hat{S}(8))}{\hat{S}(8)^2}$ and $\frac{\hat{V}(\hat{S}(19))}{\hat{S}(19)^2}$
+
+4. Note that the calculation of the entries is very similar to the calculations performed for the 95% pointwise confidence intervals (recall variance of KM estimator is estimated using Greenwood's formula). We get $\frac{\hat{V}(\hat{S}(8))}{\hat{S}(8)^2}=\frac{0.0024482102}{0.7837376^2}=0.003986$ and $\frac{\hat{V}(\hat{S}(19))}{\hat{S}(19)^2}=\frac{0.0035119308}{0.6645676^2}=0.007952$
+
+5. Lower bound: $a_{L}=\frac{n \times \hat{\sigma_s}^2(t_{L})}{1+n \times \hat{\sigma_s}^2(t_{L})}$ and we get $\frac{70 \times 0.003986}{1+70 \times 0.003986}=0.2181514$
+
+6. Upper bound: $a_{U}=\frac{n \times \hat{\sigma_s}^2(t_{U})}{1+n \times \hat{\sigma_s}^2(t_{U})}$ and we get $\frac{70 \times 0.007952}{1+70 \times 0.007952}=0.3575907$
+
+7. Look up values for $C_{0.05}(0.22, 0.36)=2.5272$
+
+```{r}
+# for Group 0-routine bathing
+group = burn$Z1 # Treatment: 0-routine bathing 1-Body cleansing
+workdata = burn[burn$Z1==0,]
+survtime = workdata$T3
+indicator = workdata$D3
+
+KMestimator <- function (Z,delta)
+{UZ<-unique(Z) #Unique observed times;
+N<-length(UZ)
+UZ.order<-order(UZ)
+UZ<-UZ[UZ.order] #sort data;
+KM <- rep(0,N)
+Y<-rep(0,N)
+D<-rep(0,N)
+D[1]<-sum(Z[delta==1]==UZ[1]) #number of events at t1
+Y[1]<-sum(Z >= UZ[1]) #number at risk just before t1
+KM[1] <- 1-D[1]/Y[1] #this is for right continuous value
+for (i in 2: N){
+D[i]<-sum(Z[delta==1]==UZ[i])
+Y[i]<-sum(Z >= UZ[i])
+KM[i] <- KM[i-1]*(1-D[i]/Y[i])
+}
+# Calculate variance and sdandard error;
+sigma2.s<-rep(0,N)
+for (i in 1: N){
+## sigma2.s[i]<-sum( (UZ<=UZ[i])*(D/(Y*(Y-D))) ) #old version
+sigma2.s[i]<-sum( (UZ[1:i]<=UZ[i])*(D[1:i]/(Y[1:i]*(Y[1:i]-D[1:i]))))
+## Note the data is sorted by UZ;
+## Using this to avoid NaN for times smaller than the largest observation;
+}
+KM.var<-KM^2*sigma2.s #V(S(t))=S(t)ˆ2*sum(d/(Y*(Y-d)))
+KM.se<-sqrt(KM.var)
+Full<-data.frame(UZ,D,Y,KM,sigma2.s,KM.var,KM.se) #full dataset
+Reduced<-subset(Full, (Full$D>0)) #exclude censored observations
+list(Full, Reduced)
+}
+KM.est<-KMestimator(survtime, indicator)
+```
+
+```{r}
+##according to lecture note in chapter 4 p50
+sigma = sqrt(KM.est[[2]]$sigma2.s)
+surv=KM.est[[2]]$KM
+md = 2.5272*sigma
+####Note: the CI limits should be restricted between -1 and 1;
+linearL = surv - md * surv
+linearU = surv + md * surv
+linearL=linearL*(-1<=linearL)+(-1)*(-1>linearL)
+linearU=1*(1<linearU)+linearU*(linearU<=1)
+logL = surv^( 1/(exp(md/log(surv))))
+logU = surv^(exp(md/(log(surv))))
+logL=logL*(-1<=logL)+(-1)*(-1>logL)
+logU=1*(1<logU)+logU*(logU<=1)
+sinL = (sin(pmax(0, asin(surv^.5)-.5 * md *(surv/(1-surv))^.5)))^2
+sinU = (sin(pmin(pi/2, asin(surv^.5) + .5 * md *(surv/(1-surv))^.5)))^2
+sinL=sinL*(-1<=sinL)+(-1)*(-1>sinL)
+sinU=1*(1<sinU)+sinU*(sinU<=1)
+#ConfBand<-data.frame(KM.est[[2]]$UZ, KM.est[[2]]$KM,
+#KM.est[[2]]$KM.se,KM.est[[2]]$sigma2.s,linearL,linearU,logL,logU,sinL,sinU)
+ConfBand<-data.frame(KM.est[[2]]$UZ, KM.est[[2]]$KM,linearL,linearU,logL,logU,sinL,sinU)
+##100(1-alpha)% confidence bands of S(x): [L(t),U(t)] where
+##1-alpha=P(L(t)<S(t)<U(t),for all tL<t<tU)
+ConfBand<-subset(ConfBand,(8<=KM.est[[2]]$UZ & KM.est[[2]]$UZ<=20))
+ConfBand<-as.matrix(ConfBand)
+cat("95% EP Confidence Band:","\n")
+print(ConfBand)
+```
+
+__\textcolor{red}{For Group 1-Body cleansing:}__
+
+```{r}
+# for Group 0-routine bathing
+group = burn$Z1 # Treatment: 0-routine bathing 1-Body cleansing
+workdata = burn[burn$Z1==1,]
+survtime = workdata$T3
+indicator = workdata$D3
+
+KMestimator <- function (Z,delta)
+{UZ<-unique(Z) #Unique observed times;
+N<-length(UZ)
+UZ.order<-order(UZ)
+UZ<-UZ[UZ.order] #sort data;
+KM <- rep(0,N)
+Y<-rep(0,N)
+D<-rep(0,N)
+D[1]<-sum(Z[delta==1]==UZ[1]) #number of events at t1
+Y[1]<-sum(Z >= UZ[1]) #number at risk just before t1
+KM[1] <- 1-D[1]/Y[1] #this is for right continuous value
+for (i in 2: N){
+D[i]<-sum(Z[delta==1]==UZ[i])
+Y[i]<-sum(Z >= UZ[i])
+KM[i] <- KM[i-1]*(1-D[i]/Y[i])
+}
+# Calculate variance and sdandard error;
+sigma2.s<-rep(0,N)
+for (i in 1: N){
+## sigma2.s[i]<-sum( (UZ<=UZ[i])*(D/(Y*(Y-D))) ) #old version
+sigma2.s[i]<-sum( (UZ[1:i]<=UZ[i])*(D[1:i]/(Y[1:i]*(Y[1:i]-D[1:i]))))
+## Note the data is sorted by UZ;
+## Using this to avoid NaN for times smaller than the largest observation;
+}
+KM.var<-KM^2*sigma2.s #V(S(t))=S(t)ˆ2*sum(d/(Y*(Y-d)))
+KM.se<-sqrt(KM.var)
+Full<-data.frame(UZ,D,Y,KM,sigma2.s,KM.var,KM.se) #full dataset
+Reduced<-subset(Full, (Full$D>0)) #exclude censored observations
+list(Full, Reduced)
+}
+KM.est<-KMestimator(survtime, indicator)
+```
+
+1. Recall distinct event times at $t=2,3,4,...8,..18,42$
+
+2. So $\hat{\sigma_s}^2(8)=\hat{\sigma_s}^2(8)$ and $\hat{\sigma_s}^2(20)=\hat{\sigma_s}^2(18)$
+
+3. need to plugin values into this equation: $\frac{\hat{V}(\hat{S}(8))}{\hat{S}(8)^2}$ and $\frac{\hat{V}(\hat{S}(18))}{\hat{S}(18)^2}$
+
+4. Note that the calculation of the entries is very similar to the calculations performed for the 95% pointwise confidence intervals (recall variance of KM estimator is estimated using Greenwood's formula). We get $\frac{\hat{V}(\hat{S}(8))}{\hat{S}(8)^2}=\frac{0.0013581815}{0.8688845^2}=0.001799$ and $\frac{\hat{V}(\hat{S}(18))}{\hat{S}(18)^2}=\frac{0.0028162890}{0.7399692^2}=0.005143$
+
+5. Lower bound: $a_{L}=\frac{n \times \hat{\sigma_s}^2(t_{L})}{1+n \times \hat{\sigma_s}^2(t_{L})}$ and we get $\frac{84 \times 0.001799}{1+84 \times 0.001799}=0.1312778$
+
+6. Upper bound: $a_{U}=\frac{n \times \hat{\sigma_s}^2(t_{U})}{1+n \times \hat{\sigma_s}^2(t_{U})}$ and we get $\frac{84 \times 0.005143}{1+84 \times 0.005143}=0.3016818$
+
+7. Look up values for $C_{0.05}(0.13, 0.30)=2.6210$
+
+```{r}
+##according to lecture note in chapter 4 p50
+sigma = sqrt(KM.est[[2]]$sigma2.s)
+surv=KM.est[[2]]$KM
+md = 2.621*sigma
+####Note: the CI limits should be restricted between -1 and 1;
+linearL = surv - md * surv
+linearU = surv + md * surv
+linearL=linearL*(-1<=linearL)+(-1)*(-1>linearL)
+linearU=1*(1<linearU)+linearU*(linearU<=1)
+logL = surv^( 1/(exp(md/log(surv))))
+logU = surv^(exp(md/(log(surv))))
+logL=logL*(-1<=logL)+(-1)*(-1>logL)
+logU=1*(1<logU)+logU*(logU<=1)
+sinL = (sin(pmax(0, asin(surv^.5)-.5 * md *(surv/(1-surv))^.5)))^2
+sinU = (sin(pmin(pi/2, asin(surv^.5) + .5 * md *(surv/(1-surv))^.5)))^2
+sinL=sinL*(-1<=sinL)+(-1)*(-1>sinL)
+sinU=1*(1<sinU)+sinU*(sinU<=1)
+#ConfBand<-data.frame(KM.est[[2]]$UZ, KM.est[[2]]$KM,
+#KM.est[[2]]$KM.se,KM.est[[2]]$sigma2.s,linearL,linearU,logL,logU,sinL,sinU)
+ConfBand<-data.frame(KM.est[[2]]$UZ, KM.est[[2]]$KM,linearL,linearU,logL,logU,sinL,sinU)
+##100(1-alpha)% confidence bands of S(x): [L(t),U(t)] where
+##1-alpha=P(L(t)<S(t)<U(t),for all tL<t<tU)
+ConfBand<-subset(ConfBand,(8<=KM.est[[2]]$UZ & KM.est[[2]]$UZ<=20))
+ConfBand<-as.matrix(ConfBand)
+cat("95% EP Confidence Band:","\n")
+print(ConfBand)
+```
+
+\pagebreak
+
+### part f)
+
+Based on previous results, especially the Cumulative Hazard v.s. Time Plot, it is clear to observe that the Cumulative Hazard for group 0 (routine bathing) is almost always higher than the Cumulative Hazard for group 1 (body cleansing) for any given time. This shows that group 0 has a higher risk of infection than group 1. This means that individuals in group 0 are experiencing a higher rate of infection than those in group 1. This indicates that the survival function of group 1 is higher than the survival function of group 0 since $H(t) = - log[S(t)]$. Therefore, the higher cumulative hazard for group 0 indicates a lower survival probability compared to group 1.
+
+
+\pagebreak
+
+## Question 2
+
+```{r}
+Year.Interval = c("[0,2)","[2,4)","[4,6)","[6,8)","[8,10)","[10,12)","[12,14)")
+Number.of.Events = c(2,1,4,3,2,2,3)
+Number.of.Losts = c(3,2,8,10,18,21,21)
+
+risk = c()
+for (i in 2:7) {
+  risk[1] = 100
+  risk[i] = risk[i-1]-Number.of.Events[i-1]-Number.of.Losts[i-1] 
+} 
+Number.of.Risks = risk
+
+Adj.Number.of.Risks = c()
+for (i in 1:7) {
+  Adj.Number.of.Risks[i] = Number.of.Risks[i]-Number.of.Losts[i]/2
+} 
+
+p = c()
+for (i in 2:7) {
+  p[1] = 1 - Number.of.Events[1]/Adj.Number.of.Risks[1]
+  p[i] = p[i-1]*(1-Number.of.Events[i]/Adj.Number.of.Risks[i])
+}
+
+life.table = data.frame(Year.Interval,Number.of.Events,Number.of.Losts,Number.of.Risks,
+                        Adj.Number.of.Risks,p)
+knitr::kable(life.table, "pipe", 
+             col.names = c("Year Interval", "# of HIV-Postive",
+                           "# Lost to Follow-up", "# of At-risk",
+                           "Adjusted # of At-risk", 
+                           "Probability of Individual Survives Beyond this Interval"))
+```
+
+```{r}
+# use lifetab function
+tis = c(0,2,4,6,8,10,12,14)
+Number.of.Events = c(2,1,4,3,2,2,3)
+Number.of.Losts = c(3,2,8,10,18,21,21)
+knitr::kable(data.frame(lifetab(tis, 100, Number.of.Losts, Number.of.Events)), "latex")
+```
+
+
+\pagebreak
+
+## Question 3
+
+### part a)
+
+$H_0:h_0(t)=h_1(t)=h(t)$ for all $t<\tau$ vs.$H_a:h_0(t) \neq  h_1(t)$ for some $t<=\tau$
+
+where $h_0(t)$ is the hazard rate for group 0 (routine bathing) and $h_1(t)$ is the hazard rate for group 1 (body cleansing) and $\tau$ is the last observation time. Also note when we use logrank test, $W_j=1$
+
+```{r}
+library(survival)
+library(KMsurv)
+data(burn)
+group = burn$Z1 # Treatment: 0-routine bathing 1-Body cleansing
+survtime = burn$T3
+indicator = burn$D3
+```
+
+```{r}
+# log-rank test using survdiff()
+logrank.test = survdiff(Surv(survtime, indicator)~group, rho = 0, data = burn)
+logrank.test
+logrank.test$chisq
+```
+
+```{r}
+#Self-written function for Log-rank Test and Gehan's Test
+
+# Function for calculations of event numbers and risk sets;
+# test=1-> Log-rank, 2-> Gehan, 3-> Fleming-Harrington, p=1, q=1, 4-> Peto;
+#(Z, delta) represents all observations in the dataset;
+
+RiskSet <- function (Z,delta,Z1,delta1, test) #(Z1,delta1) represent obs. in a group;
+{ 
+  UZ<-unique(Z[delta==1]) #Unique observed times;
+  N<-length(UZ)
+  UZ.order<-order(UZ)
+  UZ<-UZ[UZ.order] #sort data;
+  KM <- rep(0,N)
+  KM.tilde<-rep(0,N) #Used in Peto-Peto weights;
+  Y<-rep(0,N)
+  D<-rep(0,N)
+  Y1<-rep(0,N)
+  D1<-rep(0,N)
+  YY<-rep(0,N)
+  for (i in 1 : N){
+  D[i]<-sum(Z[delta==1]==UZ[i])
+  Y[i]<-sum(Z >= UZ[i])
+  D1[i]<-sum(Z1[delta1==1]==UZ[i])
+  Y1[i]<-sum(Z1 >= UZ[i])
+  YY[i]<-Y[i]+1 #Used in Peto-Peto weights;
+  if (i==1){
+  KM[i]=1
+  KM.tilde[i]=1-D[1]/YY[1]
+  }
+  else{
+  KM[i]<-KM[i-1]*(1-D[i-1]/Y[i-1]) #left continuous version of K-M estimator for Fleiming-KM.tilde[i]<-KM.tilde[i-1]*(1-D[i]/YY[i]) #Modified K-M estimator;
+  }
+  }
+  D2<-D-D1
+  Y2<-Y-Y1
+  Y1DY<-Y1*(D/Y)
+  Y2DY<-Y2*(D/Y)
+  DY1DY<-D1-Y1DY
+  YDY=((Y-D)/((Y-1)*(Y!=1)+1*(Y==1)))*(Y!=1)+ 0*(Y==1)
+  #This means if Y=1, (Y-D)/(Y-1)=0, which will not affect results;
+  Y1YYYD<-(Y1/Y)*(1-Y1/Y)*YDY*D
+  print(UZ)
+  dyTable<-data.frame(UZ, Y1, D1, Y2, D2, Y, D, Y1DY, DY1DY, Y1YYYD, KM, KM.tilde)
+  # Change test method here, e.g. 1->log-rank test, 2->Gehan test;
+  if (test==1){
+    W=1
+  cat("The test is Log-rank test:", "\n")
+  }
+  if (test==2){
+  W<- Y
+  cat("The test is Gehan test:", "\n")
+  }
+  if (test==3){
+  W<- KM*(1-KM) # KM*(1-KM)-> Fleming-Harrinnton test with p=1 and q=1;
+  cat("The test is Fleming-Harrinnton test with p=1 and q=1:", "\n")
+  }
+  if (test==4){
+  W<- KM.tilde
+  cat("The test is Peto-Peto test:", "\n")
+  }
+  #Calculate Z(tau) values;
+  Z1Tau<-sum(W*(D1-Y1DY))
+  Z2Tau<-sum(W*(D2-Y2DY))
+  ZTau<-matrix(c(Z1Tau,Z2Tau),2,1)
+  # Calculate variance and covariance;
+  sigma11<-sum(W^2*(Y1/Y)*(1-Y1/Y)*YDY*D)
+  sigma22<-sum(W^2*(Y2/Y)*(1-Y2/Y)*YDY*D)
+  sigma12<--sum(W^2*(Y1/Y)*(Y2/Y)*YDY*D)
+  sigma21<-sigma12
+  varmatrix<-matrix(c(sigma11,sigma12, sigma21, sigma22), 2,2)
+  # Calculate Chi-Squred statistic and p-value using Z_1(tau);
+  chiSq<-Z1Tau^2/sigma11
+  pval<-1-pchisq(chiSq, 1)
+  testval<-c(chiSq,pval)
+  list(dyTable, ZTau, varmatrix, testval)
+}
+```
+
+```{r}
+Z<-burn$T3
+delta<-burn$D3
+Z1<-burn$T3[burn$Z1==0] # 0-routine bathing 1-Body cleansing
+delta1<-burn$D3[burn$Z1==0]
+
+# Set a value for test for a specific test;
+# test=1-> Log-rank, 2-> Gehan, 3-> Fleming-Harrington, p=1, q=1, 4-> Peto-Peto;
+test=1 #Change test value here to get different weights;
+Results.Logrank<-RiskSet(Z,delta,Z1,delta1, test)
+Results.Logrank
+```
+
+Since the p-value is 0.05148488, which is slightly greater than $\alpha=0.05$, we do not reject the null hypothesis, showing that the hazard rates of group 1 and group 0 are the same at 95% significance level.
+
+\pagebreak
+
+### part b)
+
+$H_0:h_0(t)=h_1(t)=h(t)$ for all $t<\tau$ vs.$H_a:h_0(t) \neq  h_1(t)$ for some $t<=\tau$
+
+where $h_0(t)$ is the hazard rate for group 0 (routine bathing) and $h_1(t)$ is the hazard rate for group 1 (body cleansing) and $\tau$ is the last observation time. Also note when we use logrank test, $W_j=Y_j$
+
+```{r}
+test=2 #Change test value here to get different weights;
+Results.Gehan<-RiskSet(Z,delta,Z1,delta1, test)
+Results.Gehan
+```
+
+Since the p-value is 0.09058515, which is greater than $\alpha=0.05$, we do not reject the null hypothesis, showing that the hazard rates of group 1 and group 0 are the same at 95% significance level.
+
+\pagebreak
+
+### part c)
+
+Although the conclusion from logrank and Gehan's test are the same: do not reject the null hypothesis, showing that the hazard rates of group 1 and group 0 are the same at 95% significance level, one should realize that the weights $W_j$ assigned are not the same. Logrank test is unweighted $(W_j=1)$ and Gehan's Wilcoxon Test has $W_j=Y_j$, which means that as $t_j$ increases, $Y_j$ decreases, so more weights given to early events/departure. However, in this question, this should not be the case. So logrank test is more preferred.
+
+\pagebreak
+
+## Question 4
+
+```{r}
+library(KMsurv)
+data("bmt")
+head(bmt,3)
+# group Disease Group 1-ALL, 2-AML Low Risk, 3-AML High Risk
+# t2 Disease Free Survival Time (Time To Relapse, Death Or End Of Study)
+# d2 Relapse Indicator 1-Relapsed, 0-Disease Free
+# ta Time To Acute Graft-Versus-Host Disease
+# da Acute GVHD Indicator 1-Developed Acute GVHD 0-Never Developed Acute GVHD)
+```
+
+### part a)
+
+```{r}
+survtime = bmt$ta
+indicator = bmt$da
+group = bmt$group
+# log-rank test
+logrank.test = survdiff(Surv(survtime, indicator)~group, rho = 0, data = bmt)
+logrank.test
+```
+
+```{r}
+fitNA = survfit(Surv(survtime, indicator)~group, ctype = 1)
+plot(fitNA, lwd=2, lty=2, conf.int=FALSE, mark.time=TRUE, cex=2, cex.lab=1.4,
+cumhaz = TRUE, col=c("black", "blue", "red"), xlab="Time", ylab="Cumulative Hazard",
+main="The Cumulative Hazard estimates", ylim=c(0,0.5))
+legend("topright",c("Group 1-ALL", "2-AML Low Risk", "3-AML High Risk"),lty=c(2),
+col=c("black", "blue", "red"), cex=0.8)
+```
+
+\pagebreak
+
+### part b)
+
+```{r}
+survtime = bmt$t2
+indicator = bmt$d2
+group = bmt$group
+# log-rank test
+logrank.test = survdiff(Surv(survtime, indicator)~group, rho = 0, data = bmt)
+logrank.test
+```
+
+```{r}
+fitNA = survfit(Surv(survtime, indicator)~group, ctype = 1)
+plot(fitNA, lwd=2, lty=2, conf.int=FALSE, mark.time=TRUE, cex=2, cex.lab=1.4,
+cumhaz = TRUE, col=c("black", "blue", "red"), xlab="Time", ylab="Cumulative Hazard",
+main="The Cumulative Hazard estimates", ylim=c(0,1))
+legend("topright",c("Group 1-ALL", "2-AML Low Risk", "3-AML High Risk"),lty=c(2),
+col=c("black", "blue", "red"), cex=0.8)
+```
+
+\pagebreak
+
+## Question 5
+
+See another pdf named __question 5__, which is a hand-written solution
+
+\pagebreak
+
+## Question 6
+
+\pagebreak
+
+### part a)
+
+```{r}
+thymic = c(158,192,193,194,195,202,212,215,229,230,237,240,244,
+           247,259,300,301,337,415,444,485,496,529,537,624,707,800)
+reticulum = c(430,590,606,638,655,679,691,693,696,747,752,760,778,821,986)
+other = c(136,246,255,376,421,565,616,617,652,655,658,660,662,675,681,734,
+          736,737,757,769,777,801,807,825,855,857,864,868,870,873,882,895,
+          910,934,942,1015,1019)
+age = append(append(thymic, reticulum), other)
+d1 = append(rep(1, length(thymic)), rep(0, length(reticulum)+length(other)))
+d2 = append(append(rep(0, length(thymic)), rep(1, length(reticulum))), rep(0, length(other)))
+d3 = append(append(rep(0, length(thymic)), rep(0, length(reticulum))), rep(1, length(other)))
+workdata = data.frame(age, d1, d2, d3)
+head(workdata)
+```
+
+```{r}
+library(cmprsk)
+library(survival)
+## Thymic Lymphoma
+indicator = append(rep(1, length(thymic)), rep(2, length(reticulum)+length(other)))
+data1 = data.frame(age, indicator)
+CI_thymic = cuminc(age, indicator, cencode=0)
+plot.cuminc(CI_thymic, xlim = c(200,1000), curvlab = c("Thymic Lymphoma", "Reticulum + Other"))
+timepoints(CI_thymic, c(200,300,400,500,600,700,800,900,1000))
+## Reticulum
+indicator = append(append(rep(2,length(thymic)), rep(1, length(reticulum))), rep(2, length(other)))
+data1 = data.frame(age, indicator)
+CI_reticulum = cuminc(age, indicator, cencode=0)
+plot.cuminc(CI_reticulum, xlim = c(200,1000), curvlab = c("Reticulum", "Thymic Lymphoma + Other"))
+timepoints(CI_reticulum, c(200,300,400,500,600,700,800,900,1000))
+## Other
+indicator = append(append(rep(2,length(thymic)), rep(2, length(reticulum))), rep(1, length(other)))
+data1 = data.frame(age, indicator)
+CI_other = cuminc(age, indicator, cencode=0)
+plot.cuminc(CI_other, xlim = c(200,1000), curvlab = c("Other", "Thymic Lymphoma + Reticulum"))
+timepoints(CI_other, c(200,300,400,500,600,700,800,900,1000))
+```
+
+\pagebreak
+
+### part b)
+
+```{r}
+time = unique(sort(workdata$age))
+thymic = timepoints(CI_thymic, time)$est[1,]
+reticulum = timepoints(CI_reticulum, time)$est[1,]
+other = timepoints(CI_other, time)$est[1,]
+status = rep(1, nrow(workdata))
+fit = survfit(Surv(age, status)~1, data = workdata)
+KM = summary(fit)$surv
+match = round((1-KM),5)==round((thymic+reticulum+other),5)
+result = data.frame(thymic, reticulum, other, KM, 1-KM, thymic+reticulum+other, match)
+knitr::kable(result, "pipe", col.names = c("CI_thymic", "CI_reticulum", "CI_other", 
+                                           "KM", "1-KM", "CI(t)", "Match"))
+```
+
+\pagebreak
+
+### part c)
+
+The complement of the marginal Kaplan-Meier estimator refers to the estimator of the survival probability for the complementary (non-censored) observations at each time point. Mathematically, the complement of the marginal Kaplan-Meier estimator is defined as:
+
+$$\hat{S}_c(t) = \frac{d_c(t)}{n_c(t)}$$
+
+where $d_c(t)$ is the number of complementary observations who survived beyond time $t$ and $n_c(t)$ is the number of complementary observations at risk at time $t$.
+
+The complement of the marginal Kaplan-Meier estimator estimates the survival probability for the non-censored observations, i.e., those individuals who have experienced the event of interest by the end of the study or have been lost to follow-up. This estimator is particularly useful when we want to estimate the survival probability for the entire population, including those individuals who are not censored.
+
+In summary, the complement of the marginal Kaplan-Meier estimator estimates the survival probability for the non-censored observations and provides an estimate of the overall survival probability for the population.
+
+```{r, warning=FALSE}
+fit1 = survfit(Surv(age, d1)~1, data = workdata)
+fit2 = survfit(Surv(age, d2)~1, data = workdata)
+fit3 = survfit(Surv(age, d3)~1, data = workdata)
+
+km1 = summary(fit1, times = c(200,300,400,500,600,700,800,900,1000))$surv
+km2 = summary(fit2, times = c(200,300,400,500,600,700,800,900,1000))$surv
+km3 = summary(fit3, times = c(200,300,400,500,600,700,800,900,1000))$surv
+```
+
+```{r}
+comp1 = 1 - km1
+CI1 = timepoints(CI_thymic, c(200,300,400,500,600,700,800,900,1000))$est[1,]
+comp2 = 1 - km2
+CI2 = timepoints(CI_reticulum, c(200,300,400,500,600,700,800,900,1000))$est[1,]
+comp3 = 1 - km3
+CI3 = timepoints(CI_other, c(200,300,400,500,600,700,800,900,1000))$est[1,]
+
+partc.result = data.frame(comp1, CI1, round(comp1-CI1,5), 
+                          comp2, CI2, round(comp2-CI2,5), 
+                          comp3, CI3, round(comp3-CI3,5))
+knitr::kable(partc.result, "latex", col.names = c("F_x1", "CI_1", "difference",
+                                                 "F_x2", "CI_2", "difference",
+                                                 "F_x3", "CI_3", "difference"))
+```
+
+\pagebreak
+
+### part d)
+
+For a particular risk J, let $\widehat{CI_J(t)}$ and $\widehat{CI_{J^C}(t)}$ be the cumulative incidence function estimators for risk J and for all other risks lumped together, respectively. 
+
+We could have the conditional probability function estimator:
+
+$$\widehat{CP_J(t)}=\frac{\widehat{CI_J(t)}}{1-\widehat{CI_{J^C}(t)}}$$
+
+It estimates the conditional probability of event J's occurring by time t given that none of other causes have occurred by t.
+
+```{r}
+# for t=500, k=1
+numerator = timepoints(CI_thymic, c(200,300,400,500,600,700,800,900,1000))$est[1,4]
+denominator = 1- timepoints(CI_thymic, c(200,300,400,500,600,700,800,900,1000))$est[2,4]
+numerator/denominator
+# for t=800, k=1
+numerator = timepoints(CI_thymic, c(200,300,400,500,600,700,800,900,1000))$est[1,7]
+denominator = 1- timepoints(CI_thymic, c(200,300,400,500,600,700,800,900,1000))$est[2,7]
+numerator/denominator
+```

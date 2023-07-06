@@ -1,0 +1,943 @@
+---
+title: "STAT 635 F2022 Assignment 3 - Due on Dec. 9, Friday, 2022, 11:59pm"
+author: "Instructor: Xuewen Lu \\ (This PDF is made from an R Markdown File)"
+date: "`r format(Sys.time(), '%Y-%m-%d')`"
+output:
+  pdf_document:
+    extra_dependencies:
+    - bbm
+    - xcolor
+    - bm
+    toc: yes
+  html_document:
+    df_print: paged
+    toc: yes
+  html_notebook:
+    toc: yes
+---
+
+<!--
+Note: One can use the Rmd file as a template to generate pdf for an assignment; but ignore the commented parts included in blocks denoted by 
+<!-- **** -->.
+
+<!--
+# Note: html does not show the marks, but pdf does.
+-->
+
+\pagebreak
+<!--
+Note: If Monte-Carlo methods are used, every one may get slightly different results due to use of different random seeds.
+-->
+
+<!--
+\textcolor{red}{[Total 66 marks]}
+-->
+
+<!-- R Markdown can knit the following two tables (one in R Markdown format and one in Latex format) to pdf,  but can only knit the R Markdown format to notebook nb.html. So if you want to keep the Table in both pdf and nb.html, I would suggest you to use the R Markdown format.
+To add a caption, the syntax is Table: followed by your caption; Pandocs numbers automatically. Leave one line blank between the end of the table and the caption line.
+-->
+
+<!--
+| Johnson Family | Transformation | Parameter Conditions | X Condition |
+|----------------|-----------------------------------------------------------------------|---------------------------------------------------------|-------------------------------------|
+| $S_B$ | $Z = \gamma + \eta \ ln(\frac {X - \epsilon} {\lambda + \epsilon - X})$ | $\eta, \lambda >0, -\infty < \gamma, \epsilon < \infty$ | $\epsilon < X < \epsilon + \lambda$ |
+| $S_L$ | $Z = \gamma + \eta \ ln(X - \epsilon)$ | $\eta >0, -\infty < \gamma, \epsilon < \infty$ | $X > \epsilon$ |
+| $S_U$ | $Z = \gamma + \eta \sinh^{-1}(\frac {X - \epsilon} {\lambda})$ | $\eta, \lambda >0, -\infty < \gamma, \epsilon < \infty$ | $-\infty < X < \infty$ |
+
+Table: Transformations Associated with the Johnson System
+
+\begin{table}[h]
+\centering
+\caption{Transformations Associated with the Johnson System}
+\begin{tabular}{|l|l|l|l|}
+\hline
+Johnson Family & Transformation & Parameter Conditions & X Condition \\ \hline
+$S_B$ & $Z=\gamma + \eta ln(\frac {X - \epsilon} {\lambda + \epsilon - X})$ & $\eta, \lambda >0, -\infty < \gamma, \epsilon < \infty$ & $\epsilon < X < \epsilon + \lambda$ \\ \hline
+$S_L$ & $Z=\gamma + \eta ln(X - \epsilon)$ & $\eta >0, -\infty < \gamma, \epsilon < \infty$ & $X > \epsilon$ \\ \hline
+$S_U$ & $Z=\gamma + \eta \sinh^{-1}(\frac {X - \epsilon} {\lambda})$ & $\eta, \lambda >0, -\infty < \gamma, \epsilon < \infty$ & $-\infty < X < \infty$ \\ \hline
+\end{tabular}
+\end{table}
+-->
+
+<!--
+# Due date: February 6, 11:59 pm.
+-->
+
+\pagebreak
+
+
+<!--
+See marks assigned to each problem, the marks are allocated to the write up and for the solution, respectively.
+-->
+
+# General Policies  \textcolor{red}{[Total 60 marks]}
+
+- Your assignment solutions should be created in `"RStudio"` with R Markdown to include the R codes and should be saved as an R Markdown file and a PDF file generated from the R Markdown file. You should name your files as `"Lastname-Firstname-Stat635-A3.Rmd"` and 
+`"Lastname-Firstname-Stat635-A3.pdf"`.
+- Test your R codes before submission to make sure it can be executed successfully in `"RStudio"`.
+- For each assignment, submit only one PDF file and the associated Rmd file to D2L, and the same PDF to gradescope.ca. Only the PDF file in gradescope is graded. The Rmd file may be used to test your R programs when needed. 
+- If Monte-Carlo methods are used, you must fix the random seed in your R code by using **set.seed(2022)**.
+- For all numerical problems, summarize the computer generated results in tables or figures and interpret them using your own words, then draw conclusions from them. **Show all your work and spell out the details**. 
+- Late submission is not acceptable.
+- For guidelines on how to write a good assignment, go to D2L to read two sample assignments, **Bad-assignment-example.pdf** and 
+**Good-assignment-example.pdf**, one is bad and the other is good, you are expected to do a good one.  
+
+\noindent {\bf Note:}  Materials are based on Dobson and Barnett (D\&B or DB), 3rd Edition, 2008.   
+
+
+\pagebreak
+
+# Problem 1. \textcolor{red}{[12 marks; (a) 3, (b) 3, (c), 3, (d), 3]}
+
+The data in Table \ref{table.1} are numbers of insurance policies, $n$, and numbers of claims, $y$, for cars in various insurance categories, CAR, tabulated by age of policy holder, AGE, and district where the policy holder lived (DIST = 1, for London and other major cities, and DIST = 0, otherwise). The table is derived from the CLAIMS data set in Aitkin et al. (2005) obtained from a paper by Baxter et al. (1980).
+ 
+\begin{table}[h]
+\begin{center}
+\caption{Car insurance claims: based on the CLAIMS data set reported by Aitkin et al. (2005).} \label{table.1}
+\begin{tabular}{cccccc} \hline
+ & & \multicolumn{2}{c}{\underline{DIST=0}} &  \multicolumn{2}{c}{\underline{DIST=1}}  \\
+ CAR & AGE &  $y$  &  $n$  &  $y$  & $n$  \\  \hline
+1    &     1  &     65  &    317  &       2  &      20 \\
+1    &     2  &     65  &    476  &       5  &      33 \\
+1    &     3  &    52   &   486   &      4   &     40 \\
+1    &     4  &    310 &   3259 &      36 &      316 \\
+2    &     1  &     98  &    486  &      7   &    31  \\
+2    &     2  &    159 &    1004&     10 &       81 \\
+2    &      3 &     175&     1355&        22&       122\\
+2    &      4  &    877&     7660&       102&       724\\
+3   &       1  &     41  &    223   &      5  &      18 \\
+3  &        2 &     117  &    539   &      7  &      39 \\
+3  &        3 &     137  &    697  &      16 &       68 \\
+3  &        4  &    477  &   3442  &      63&       344 \\
+4  &        1 &      11   &    40     &    0   &      3 \\
+4  &        2  &     35   &   148    &     6  &      16 \\
+4  &        3 &      39   &   214    &     8   &     25   \\
+4  &        4 &     167 &    1019  &       33   &    114  \\  \hline
+\end{tabular}
+\end{center}
+\end{table}
+
+```{r}
+Car = rep(1:4, each = 4)
+Age = rep(1:4, 4)
+D0_y = c(65,65,52,310,98,159,175,877,41,117,137,477,11,35,39,167)
+D0_n = c(317,476,486,3259,486,1004,1355,7660,223,539,697,3442,40,148,214,1019)
+
+D1_y = c(2,5,4,36,7,10,22,102,5,7,16,63,0,6,8,33)
+D1_n = c(20,33,40,316,31,81,122,724,18,39,68,344,3,16,25,114)
+
+CarInsurance = cbind(Car,Age,D0_y,D0_n,D1_y,D1_n)
+head(CarInsurance)
+```
+
+\begin{description}
+\item[(a)] Calculate the rate of claims $rate=y/n$ and empirical logit $emplogit=\log(rate/(1-rate))$ for each category and plot the empirical logits by AGE,CAR and DIST to get an idea of the main effects of these factors.
+\end{description}
+
+```{r}
+D0_rate = D0_y/D0_n
+D0_emp = log(D0_rate/(1-D0_rate))
+D1_rate = D1_y/D1_n
+D1_emp = log(D1_rate/(1-D1_rate))
+CarInsurance = cbind(Car,Age,D0_y,D0_n,D0_rate,D0_emp,D1_y,D1_n,D1_rate,D1_emp)
+head(CarInsurance)
+```
+```{r,warning=FALSE,message=FALSE}
+library(gplots)
+par(mfrow = c(1,2))
+## empirical logits for Dist 0
+age = c(1:4)
+car1 = D0_emp[1:4]
+car2 = D0_emp[5:8]
+car3 = D0_emp[9:12]
+car4 = D0_emp[13:16]
+yaxis = c(max(car4),max(car3),car1[3],min(car1)) # to make the graph look better
+plot(yaxis~age, xlab = "age", ylab = "empirical logits", main = "Dist=0")
+lines(car1~age, type = "b", lty =1, col =1, data = CarInsurance[1:4,])
+lines(car2~age, type = "b", lty =1, col =2, data = CarInsurance[5:8,])
+lines(car3~age, type = "b", lty =1, col =3, data = CarInsurance[9:12,])
+lines(car4~age, type = "b", lty =1, col =4, data = CarInsurance[13:16,])
+legend("topright",legend = c("car1","car2","car3","car4"), lty = 1, col = c(1:4))
+
+## empirical logits for Dist 1
+age = c(1:4)
+car1 = D1_emp[1:4]
+car2 = D1_emp[5:8]
+car3 = D1_emp[9:12]
+car4 = D1_emp[13:16]
+yaxis = c(min(car1),max(car4),min(car1),car1[4]) # to make the graph look better
+plot(yaxis~age, xlab = "age", ylab = "empirical logits", main = "Dist=1")
+lines(car1~age, type = "b", lty =1, col =1, data = CarInsurance[1:4,])
+lines(car2~age, type = "b", lty =1, col =2, data = CarInsurance[5:8,])
+lines(car3~age, type = "b", lty =1, col =3, data = CarInsurance[9:12,])
+lines(car4~age, type = "b", lty =1, col =4, data = CarInsurance[13:16,])
+legend("topright",legend = c("car1","car2","car3","car4"), lty = 1, col = c(1:4))
+```
+
+\begin{description}
+\item[(b)] Use Poisson regression to fit a main effects model (a model without interactions) and state the fitted model in an equation (each covariate is treated as categorical and modeled using indicator variables), and then use deviance test to check if any interaction term (just test one of the three two way interactions each time, they are AGE$\times$CAR, AGE$\times$DIST, CAR$\times$DIST) can improve the fit. 
+{\bf Note:} when a variable is categorical, let's treat the lowest level as the reference level when you create dummy variables or nominal variables for that variable. For example, when the variable \verb|CAR| is treated as a categorical variable, it has 4 levels,  you can use \verb|CAR=1| as the reference level and define three dummy variable for it. Similarly, use \verb|AGE=1| and \verb|DIST=0| as the reference levels.
+\end{description}
+
+```{r}
+## create a data frame in long form
+Car = rep(1:4, each = 4,2)
+Age = rep(1:4, 8)
+Dist = rep(0:1, each = 16)
+y = c(65,65,52,310,98,159,175,877,41,117,137,477,11,35,39,167,
+      2,5,4,36,7,10,22,102,5,7,16,63,0,6,8,33)
+n = c(317,476,486,3259,486,1004,1355,7660,223,539,697,3442,40,148,214,1019,
+      20,33,40,316,31,81,122,724,18,39,68,344,3,16,25,114)
+
+CarData = data.frame(cbind(Car, Age, Dist, y, n))
+CarData$Car = c(factor(CarData$Car))
+CarData$Age = c(factor(CarData$Age))
+CarData$Dist = c(factor(CarData$Dist))
+
+model_1 = glm(y~Car+Age+Dist+offset(log(n)), family = poisson(link=log), data = CarData)
+summary(model_1)
+```
+
+Model: $log(\mu)=log(n)+\beta_0+\beta_1x_1+\beta_2x_2+\beta_3x_3+\beta_4x_4+\beta_5x_5+\beta_6x_6+\beta_7x_7$ 
+
+where $x_1=I[Car2],x_2=I[Car3],x_3=I[Car4]$, $x_4=I[Age2],x_5=I[Age3],x_6=I[Age4]$, $x_7=I[Dist1]$
+
+Fitted Model: $log(\mu)=log(n)-1.81+0.16x_1+0.39x_2+0.57x_3-0.19x_4-0.34x_5-0.53x_6+0.22x_7$ 
+
+```{r}
+model.AC = glm(y~Car+Age+Dist+Car*Age+offset(log(n)), family = poisson(link=log), data = CarData)
+1-pchisq(deviance(model_1)-deviance(model.AC),df.residual(model_1)-df.residual(model.AC))
+model.AD = glm(y~Car+Age+Dist+Age*Dist+offset(log(n)), family = poisson(link=log), data = CarData)
+1-pchisq(deviance(model_1)-deviance(model.AD),df.residual(model_1)-df.residual(model.AD))
+model.CD = glm(y~Car+Age+Dist+Car*Dist+offset(log(n)), family = poisson(link=log), data = CarData)
+1-pchisq(deviance(model_1)-deviance(model.CD),df.residual(model_1)-df.residual(model.CD))
+```
+
+The results show that adding two-term interaction is NOT going to improve the model.
+
+\begin{description}
+\item[(c)] Based on the modelling in (b), Aitkin et al. (2005) determined that all the interactions were unimportant and decided that AGE and CAR could be treated as though they were continuous variables. Fit a main effects model incorporating these features and compare it with the best model obtained in (b) using, for example, AIC. What conclusions do you reach?
+\end{description}
+
+```{r}
+## create a data frame in long form
+Car = rep(1:4, each = 4,2)
+Age = rep(1:4, 8)
+Dist = rep(0:1, each = 16)
+y = c(65,65,52,310,98,159,175,877,41,117,137,477,11,35,39,167,
+      2,5,4,36,7,10,22,102,5,7,16,63,0,6,8,33)
+n = c(317,476,486,3259,486,1004,1355,7660,223,539,697,3442,40,148,214,1019,
+      20,33,40,316,31,81,122,724,18,39,68,344,3,16,25,114)
+
+CarData = data.frame(cbind(Car, Age, Dist, y, n))
+CarData$Dist = c(factor(CarData$Dist))
+model_2 = glm(y~Car+Age+Dist+offset(log(n)), family = poisson(link=log), data = CarData)
+summary(model_2)
+```
+
+Since Model_1 and Model_2 are not in a nested relation, we use AIC instead of deviance. Specifically, AIC of Model_1 is 208.07 and AIC of Model_2 is 201.05. Smaller AIC means a better model. So Model_2 is more preferred.
+
+\begin{description}
+\item[(d)] Read the paper {\it Logistic and Poisson Regression} by 
+William Chiu~(2017) to fit a Poisson regression main effects model with an offset and a logistic regression to the data, respectively, and show the obtained estimation results are equivalent or similar. Paper is found in D2L or at 
+
+\url{https://rstudio-pubs-static.s3.amazonaws.com/238765_5a165fc24624448293f99a6a20434778.html}
+
+This paper defines $p=\frac{A}{A+B}$ and it proves $log(\frac{p}{1-p})=log(\frac{A}{B})$. This teaches us the way to build a logistic regression model and a poisson regression model (note: this time, the offset term is different than what we got on part b). The code below indicates that the obtained estimation results are similar.
+\end{description}
+
+```{r}
+library(pander)
+logit.model = glm(cbind(y,n-y)~Car+Age+Dist, data = CarData, family = binomial(link = "logit"))
+pander(logit.model, caption="logisitic model")
+poisson.model = glm(y~Car+Age+Dist+offset(log(n-y)), data = CarData, family = poisson(link = "log"))
+pander(poisson.model, caption="poisson model")
+```
+
+\pagebreak
+
+# Problem 2.  \textcolor{red}{[9 marks; (a) 3, (b) 3, (c), 3]}
+
+Consider the flu vaccine trial data in Table \ref{table.2}.
+ \begin{table} [h]
+\begin{center}
+\caption{Flu vaccine trial.} \label{table.2}
+\begin{tabular}{ccccc} \hline
+ &  \multicolumn{4}{c}{\underline{Response}}  \\
+  & Small  & Moderate  & Large  & Total  \\  \hline
+Placebo & 25 & 8  & 5  & 38   \\
+Vaccine  & 6  & 18 & 11&  35  \\ \hline
+\end{tabular}
+\end{center}
+\end{table}
+
+\begin{description}
+\item[(a)] Using a conventional chi-squared test model, test the hypothesis that the distribution of responses is the same for the placebo and vaccine groups.
+
+We can test $H_0: Trmt*Response = 0$ and $H_a: Trmt*Response \neq 0$ 
+
+full model is: $log(\mu_{ij})=\mu+Trmt+Response+Trmt*Response$ 
+
+reduced model is: $log(\mu_{ij})=\mu+Trmt+Response$, and we compare these two models.
+\end{description}
+
+```{r}
+## read the data
+Trmt = rep(0:1,each=3)
+Response = rep(0:2,2)
+Y = c(25,8,5,6,18,11)
+TrialData = data.frame(cbind(Trmt,Response,Y))
+TrialData
+# fit the full model and reduced model
+model_full = glm(Y~Trmt+Response+Trmt*Response, family = poisson, data = TrialData)
+model_reduced = glm(Y~Trmt+Response, family = poisson, data = TrialData)
+# Chi-squared test
+1-pchisq(deviance(model_reduced)-deviance(model_full), 
+         df.residual(model_reduced)-df.residual(model_full))
+```
+
+Since the p-value is smaller than $\alpha=0.05$, we reject the null hypothesis, meaning that the interaction term is significant, which implies that the distribution of response is NOT the same for the placebo and vaccine groups
+
+\begin{description}
+\item[(b)] For the model corresponding to the hypothesis of homogeneity of response distributions in part (a), fit a log-linear model,  then calculate the fitted values (cell counts), the Pearson and deviance residuals, and the goodness of fit statistics $X^2$ and $D$. Which of the cells of the table contribute most to $X^2$ and $D$? 
+Do $X^2$ and $D$ indicate the model is a good fit to the data? Explain and interpret these results.
+ \end{description}
+ 
+```{r}
+table_1 = data.frame(TrialData$Y,predict(model_reduced, type = "response"),
+                     resid(model_reduced, "pearson"), resid(model_reduced, "deviance"))
+names(table_1) = c("Original", "Fitted Value", "Pearson Res", "Deviance Res")
+table_1
+# GOF Statistics Chi-squared
+sum(resid(model_reduced, "pearson")^2)
+# GOF Statistics Deviance 
+sum(resid(model_reduced, "deviance")^2)
+```
+
+We can see that Cell 4 (Vaccine with Small Response) contributes the most to deviance and Cell 4 (Vaccine with Small Response) contributes the most to the GOF $X^2$. 
+
+```{r}
+1-pchisq(sum(resid(model_reduced, "pearson")^2)-sum(resid(model_full, "pearson")^2),1)
+1-pchisq(sum(resid(model_reduced, "deviance")^2)-sum(resid(model_full, "deviance")^2),1)
+```
+
+Also, both $X^2$ and $D$ indicate the model (the one without interaction term) is not a good fit to the data
+
+ \begin{description}
+\item[(c)] Re-analyze these data using ordinal logistic regression using \verb|Small| as the first level of the response, write down the estimated model equations, and compute the fitted probability in each cell and the fitted count in each cell, compare the result with that in part (b). 
+ \end{description}
+
+```{r}
+# Asked to use SMALL as the first level of the response = treat Small as the reference
+library(VGAM)
+library(dplyr)
+# Make a wide data form for using VGLM
+Trmt = rep(c("Placebo","Vaccine"),each=3)
+Response = rep(c("Small","Moderate","Large"),2)
+Y = c(25,8,5,6,18,11)
+TrialData = data.frame(cbind(Trmt,Response,Y))
+TrialData$Trmt = factor(TrialData$Trmt, levels = c("Placebo", "Vaccine"))
+TrialData$Response = factor(TrialData$Response, levels = c("Small", "Moderate", "Large"))
+library(reshape2)
+WideData = dcast(TrialData, Trmt~Response, value.var="Y")
+WideData$Small = as.numeric(WideData$Small)
+WideData$Moderate = as.numeric(WideData$Moderate)
+WideData$Large = as.numeric(WideData$Large)
+```
+
+```{r}
+prop.odds.model = vglm(cbind(Small, Moderate, Large)~Trmt, 
+                       family = cumulative(parallel = TRUE), data = WideData)
+summary(prop.odds.model)
+```
+
+Proportional Odds Model Equations:
+
+$L_1=log\Bigr(\frac{\pi_1}{\pi_2+\pi_3}\Bigr); L2=log\Bigr(\frac{\pi_1+\pi_2}{\pi_3}\Bigr)$
+
+Estimated Model:
+
+$L_1=0.565-1.8373*Treatment; L2=2.4408-1.8373*Treatment$
+
+Fitted Probability:
+
+```{r}
+# we can obtain fitted probability in each cell using this R-code
+fit1 = attributes(prop.odds.model)
+print(fit1$fitted.values)
+```
+
+Fitted Count:
+
+```{r}
+# we can obtain fitted count in each cell using this R-code
+prob1 = c(0.6376202, 0.2822627, 0.08011713) # for Placebo
+prob2 = c(0.2188743, 0.4275751, 0.35355055) # for Vaccine
+Cellcount1 = prob1*38
+Cellcount2 = prob2*35
+setNames(Cellcount2,Cellcount1)
+```
+
+By observation, the model can give us a quite close fitted count in each cell. I want to use McFadden's $R^2$ to check it. $R^2 = 1- \frac{Dev(b)}{Dev(min)}$
+
+```{r}
+dev.b = deviance(prop.odds.model)
+prop.odds.model.null = vglm(cbind(Small, Moderate, Large)~1, 
+                       family = cumulative(parallel = TRUE), data = WideData)
+dev.min = deviance(prop.odds.model.null)
+McF.Rsq = 1-dev.b/dev.min
+cat("McFadden's pseudo-R-squared of the model=", McF.Rsq, "%", "\n")
+```
+\pagebreak 
+# Problem 3. \textcolor{red}{[27 marks; (a)-(f), each 2 marks, (g)-(k), each 3 mark ]}
+
+Jensen, Birch, and Woodall (2008) considered profile monitoring of a calibration data set in which the data consists of 22 calibration samples. One of the purposes of the experiment was to determine the relationship between an absorbance measure (absorbance) of a chemical solution to the volume at which the solution was prepared (volume). The raw data are provided in \text{calibration.xlsx}.
+```{r}
+# Installing and loading readxl package
+# install.packages("readxl")
+# Loading
+library("readxl")
+# xlsx files
+calib.dat<- read_excel("calibration.xlsx")
+head(calib.dat)
+```
+\begin{itemize}
+ \item[(a)]  Make a spaghetti plot to graphically investigate the relationship between \text{absorbance} and \text{volume} in a sample specific manner. 
+ 
+{\bf Hint}: for each sample, you will get two spaghetti curves.
+\end{itemize}
+
+```{r}
+calib.dat$sample_repeat_concatenated = paste(calib.dat$Sample, calib.dat$Repeat)
+interaction.plot(x.factor = calib.dat$Volume, trace.factor = calib.dat$sample_repeat_concatenated, 
+                 response = calib.dat$Absorbance,
+                 xlab = "Volume", ylab = "Absorbance", col = c(1:44), legend = F)
+# Method 2
+#library(ggplot2)
+#p = ggplot(data = calib.dat, aes(x = Volume, y=Absorbance, group=sample_repeat_concatenated))
+#p+geom_line()
+```
+\begin{itemize}
+ \item[(b)] Make a mean plot to show the average absorbance for 22 samples over every different volume values  as that in Figure 11.3 in the textbook, describe what you can observe from the plot.    
+ 
+{\bf Hint}: You can treat 22 samples as 22 different methods, and each sample has two subjects (repeats).
+\end{itemize}
+
+```{r}
+agg = aggregate(calib.dat$Absorbance, list(calib.dat$Sample, calib.dat$Volume), FUN=mean)
+head(agg)
+average = agg$x
+
+interaction.plot(x.factor = agg$Group.2, trace.factor = agg$Group.1, 
+                 response = agg$x,
+                 xlab = "Volume", ylab = "Mean Absorbance", col = c(1:22), legend = F)
+```
+
+\begin{itemize} 
+ \item[(c)] Assuming all observations are independent. Using the normal linear model with different intercepts and different slopes for the 22 sample groups (each sample has two replications), perform a naive or pooled data analysis as that in Table 11.3 in the textbook.
+
+We have the model: $E(Y_{ijk})=\alpha_i + \beta_ig_k+\epsilon_{ijk}$
+\end{itemize} 
+
+```{r}
+###Model: different slopes;
+fit<-lm(Absorbance~Sample+Sample*Volume, data=calib.dat)
+summary(fit)
+```
+
+\begin{itemize}   
+  \item[(d)] Perform a two-stage or data reduction analysis as that in Tables 11.4-6 in the textbook. That is, fit a linear model for each replication in a sample to obtain the intercept and slope, then summarize both in ANOVA to test if the 22 sample groups have the same intercept and slope.
+\end{itemize}
+
+```{r}
+### Two stage analysis in Tables 11.4-6;
+options(digits=4)
+# for Repeat=1 
+beta.est1<-matrix(0, 22, 2)
+for (i in 1:22){
+  x = c(0,50,100,150,200)
+  y = subset(calib.dat$Absorbance, (calib.dat$Sample==i)&(calib.dat$Repeat==1))
+  fit.lm<-lm(y~x)
+  summary(fit.lm)
+  beta.est1[i, ]<-fit.lm$coef
+}
+
+# for Repeat=2 
+beta.est2<-matrix(0, 22, 2)
+for (i in 1:22){
+  x = c(0,50,100,150,200)
+  y = subset(calib.dat$Absorbance, (calib.dat$Sample==i)&(calib.dat$Repeat==2))
+  fit.lm<-lm(y~x)
+  summary(fit.lm)
+  beta.est2[i, ]<-fit.lm$coef
+}
+
+## two stage for Repeat=1
+twostage.data.1<-data.frame(Sample=seq(1:22), 
+                          group=c(1:22),beta0=beta.est1[,1], beta1=beta.est1[,2])
+## two stage for Repeat=2
+twostage.data.2<-data.frame(Sample=seq(1:22), 
+                          group=c(1:22),beta0=beta.est2[,1], beta1=beta.est2[,2])
+##################################Repeat=1########################################
+###Table 11.4 -> intercept and slope estimate
+beta.est1
+
+##Analysis of variance of intercept estimates in Table 11.5;
+
+interc.fit<-lm(beta0~group, data=twostage.data.1)
+print(anova(interc.fit))
+print(summary(interc.fit))
+
+##Analysis of variance of slope estimates in Table 11.6;
+
+slope.fit<-lm(beta1~group, data=twostage.data.1)
+print(anova(slope.fit))
+print(summary(slope.fit))
+
+## Summary statistics from stage 1, see lecture notes 12, p.21
+## MARGIN = 1 (for row);MARGIN = 2 (for column)
+mean.beta<-apply(beta.est1, 2, mean)
+var.beta<-apply(beta.est1, 2, var)
+sd.beta<-apply(beta.est1, 2, sd)
+
+##################################Repeat=2########################################
+###Table 11.4 -> intercept and slope estimate
+beta.est2
+
+##Analysis of variance of intercept estimates in Table 11.5;
+
+interc.fit<-lm(beta0~group, data=twostage.data.2)
+print(anova(interc.fit))
+print(summary(interc.fit))
+
+##Analysis of variance of slope estimates in Table 11.6;
+
+slope.fit<-lm(beta1~group, data=twostage.data.2)
+print(anova(slope.fit))
+print(summary(slope.fit))
+```
+
+\begin{itemize}     
+  \item[(e)] Use the results from the two-stage analysis, comment on if the results are consistent with what you have observed from part (a), then state your conclusion. You can use conduct some Welch Two Sample t-test to compare different pairs of samples, for example, sample 1 and sample 2, sample 1 and sample 3, respectively (The Welch Two Sample t-test uses the Satterthwaite-Welch approximation to the degrees of freedom).
+
+As we observed from part (a), the relationship between absorbance and volume among 22 samples are quite close / they are the same. From the ANOVA table, we determine that the null hypothesis is NOT rejected for equality of intercepts and also we do not reject the null hypothesis for equality of slops among 22 samples. This highlights the results are consistent with what we observed from part (a). Let us confirm this finding by using Welch Two Sample t-test to compare Sample 1 and Sample 2 and make another comparison between Sample 11 and Sample 19. We can see p-value is approximately equal to 1, which means fail to reject. The code-generated result is demonstrated below: 
+\end{itemize}    
+
+```{r}
+t.test(subset(calib.dat$Absorbance, (calib.dat$Sample==1)&(calib.dat$Repeat==1)),
+       subset(calib.dat$Absorbance, (calib.dat$Sample==2)&(calib.dat$Repeat==1)),paired=FALSE)
+t.test(subset(calib.dat$Absorbance, (calib.dat$Sample==11)&(calib.dat$Repeat==1)),
+       subset(calib.dat$Absorbance, (calib.dat$Sample==19)&(calib.dat$Repeat==1)),paired=FALSE)
+```
+
+\begin{itemize}     
+ \item[(f)]  Assuming a unstructured covariance matrix, use R package \verb|geepack| to analyze the data, provide the inference about the fixed effects with model-based standard errors (since this package cannot produce sandwich robust standard errors).
+\end{itemize}   
+
+```{r}
+############# For Repeat = 1 ############
+library(geepack)
+# id: a vector which identifies the clusters. The length of `id' should be the same 
+# as the number of observations. Data are assumed to be sorted so that observations 
+# on each cluster appear as contiguous rows in data. If data is not sorted this way, 
+# the function will not identify the clusters correctly. If data is not sorted this 
+# way, a warning will be issued. 
+
+calib.dat.repeat1 = subset(calib.dat, Repeat == 1)
+calib.dat.repeat1$ID <- as.numeric(gsub(" ", "", calib.dat.repeat1$sample_repeat_concatenated))
+calib.dat.repeat1$Sample = as.factor(calib.dat.repeat1$Sample)
+
+calib.dat.repeat1 = calib.dat.repeat1[order(calib.dat.repeat1$ID),]
+
+geeuns1 = geeglm(Absorbance~Volume*Sample, data = calib.dat.repeat1, 
+                family = gaussian, id = ID, corstr = "unstructured")
+
+summary(geeuns1)
+
+############# For Repeat = 2 ############
+calib.dat.repeat2 = subset(calib.dat, Repeat == 2)
+calib.dat.repeat2$ID <- as.numeric(gsub(" ", "", calib.dat.repeat2$sample_repeat_concatenated))
+calib.dat.repeat2$Sample = as.factor(calib.dat.repeat2$Sample)
+
+calib.dat.repeat2 = calib.dat.repeat2[order(calib.dat.repeat2$ID),]
+
+geeuns2 = geeglm(Absorbance~Volume*Sample, data = calib.dat.repeat2, 
+                family = gaussian, id = ID, corstr = "unstructured")
+
+summary(geeuns2)
+```
+
+\begin{itemize}    
+ \item[(g)]  Determine which model-(1) random intercept model,(2) random slope but common intercept, or (3) random intercept plus random slope model-is most appropriate for these data. Use hypothesis testing with a significance level of 0.05 to make your decision.
+Model (3) is a linear mixed model given by
+$$
+y=\beta_0+\beta x + \sum_{j=1}^m \sum_{k=1}^2 \delta_{0,jk} z_{jk} + \sum_{j=1}^m  \sum_{k=1}^2 \delta_{1,jk} z_{jk} x + \varepsilon,
+$$
+where $z_{jk}$ denotes the indicator variable for the $k$th replication in the $j$th cluster (sample), $\delta_{0,jk}$ is the {\it random intercept} term for the $k$th replication in the $j$th sample with $\delta_{0,jk} \sim N(0, \sigma_{\delta_0}^2)$, $\delta_{1,jk}$ is the {\it random slope} term for the $k$th replication in the $j$th sample with $\delta_{1,jk} \sim N(0, \sigma_{\delta_1}^2)$, $\varepsilon \sim N(0, \sigma_{\varepsilon}^2)$.
+ 
+{\bf Hint}: When comparing two models, for example, (3) vs. (1),  treat model (3) as a full model, model (1) as a reduced model, let $\ell_{\text{REML}^{\text{Full}}}$ denote the restricted log-likelihood for the full model, $\ell_{\text{REML}^{\text{Red}}}$ for the reduced model. The REML likelihood ratio test statistic is 
+$$
+\hat{\lambda}=-2(\ell_{\text{REML}}^{\text{Red}}-\ell_{\text{REML}}^{\text{Full}}).
+$$
+In the full model, we assume unstructured variance structure for random effects and errors are iid, $\hat{\lambda}$ follows a $\chi^2$ distribution with df=the difference of numbers of parameters in the two models.
+
+Compare model 1 (random intercept only) with model 3 and then compare model 2 (random slope only) with model 3, using REMLRT
+\end{itemize}
+
+```{r}
+library(nlme)
+calib.dat$ID <- as.numeric(gsub(" ", "", calib.dat$sample_repeat_concatenated))
+calib.dat = calib.dat[order(calib.dat$ID),]
+## linear mixed model with random intercept only, 
+## Results are the same as that of SAS with REML and model based se.
+rndinter.reml = lme(Absorbance~Sample+Repeat+Volume, data = calib.dat, method="REML", 
+                    random=~1|ID)
+summary(rndinter.reml)
+
+## linear mixed model with random slope only
+rndslope.reml = lme(Absorbance~Sample+Repeat+Volume, data = calib.dat, method="REML", 
+                    random=~0+Repeat|ID)
+summary(rndslope.reml)
+
+## A comparable model should be a linear mixed model with both random intercept and slope, 
+## the results are the same as those by Table11_7.SAS with "reml" and "empirical" stderr  method;
+rndeff.reml = lme(Absorbance~Sample+Repeat+Volume, data = calib.dat, method="REML", 
+                  random=~1+Repeat|ID)
+summary(rndeff.reml)
+```
+
+```{r}
+a = logLik(rndeff.reml,REML = TRUE)
+b = logLik(rndinter.reml,REML = TRUE)
+c = logLik(rndslope.reml,REML = TRUE)
+1-pchisq(-2*(b-a), df=2)
+1-pchisq(-2*(c-a), df=2)
+```
+
+\begin{itemize}   
+\item[(h)] Expression model (3) in matrix notation, we get
+$$
+\bm{y}=\bm{X}\bm{\beta} +\bm{Z}\bm{\delta}+\bm{\epsilon}
+$$
+satisfying 
+$$
+\text{Var}(\bm{y})
+=\bm{V}
+=\text{Var}(\bm{X}\bm{\beta}+\bm{Z}\bm{\delta}
++\bm{\varepsilon})
+=\bm{Z}\text{Var}(\bm{\delta})\bm{Z}^\top+ \text{Var}(\bm{\varepsilon})
+=\bm{Z}\bm{D}\bm{Z}^\top+ \bm{S},
+$$
+where 
+$$
+\bm{X}=\begin{bmatrix}
+\bm{L}_{n11} & \bm{x}_{n11} \\
+\bm{L}_{n12} & \bm{x}_{n12} \\
+\bm{L}_{n21} & \bm{x}_{n11} \\
+\bm{L}_{n22} & \bm{x}_{n12} \\
+\vdots & \vdots \\
+\bm{L}_{n211} & \bm{x}_{n211} \\
+\bm{L}_{n212} & \bm{x}_{n212} \\
+\bm{L}_{n221} & \bm{x}_{n221} \\
+\bm{L}_{n222} & \bm{x}_{n222} \\
+\end{bmatrix},
+\;\;
+\bm{y}=\begin{bmatrix}
+\bm{y}_{n11} \\
+\bm{y}_{n12} \\
+\bm{y}_{n21} \\
+\bm{y}_{n22} \\
+\vdots \\
+\bm{y}_{n211} \\
+\bm{y}_{n212} \\
+\bm{y}_{n221} \\
+\bm{y}_{n222} \
+\end{bmatrix},
+\;\;
+\bm{\delta}=\begin{bmatrix}
+\bm{\delta}_{0,11} \\
+\bm{\delta}_{0,12} \\
+\vdots \\
+\bm{\delta}_{0,211} \\
+\bm{\delta}_{0,212} \\
+\bm{\delta}_{1,11} \\
+\bm{\delta}_{1,12} \\
+\vdots \\
+\bm{\delta}_{1,211} \\
+\bm{\delta}_{1,212} \\
+\end{bmatrix},
+\;\;
+\bm{\varepsilon}=\begin{bmatrix}
+\bm{\varepsilon}_{n11} \\
+\bm{\varepsilon}_{n12} \\
+\bm{\varepsilon}_{n21} \\
+\bm{\varepsilon}_{n22} \\
+\vdots \\
+\bm{\varepsilon}_{n211} \\
+\bm{\varepsilon}_{n212} \\
+\bm{\varepsilon}_{n221} \\
+\bm{\varepsilon}_{n222} \
+\end{bmatrix},
+\;\;
+\bm{\beta}=\begin{bmatrix}
+\beta_0 \\
+\beta_1 \\
+\end{bmatrix},
+$$
+
+$$
+\bm{Z}=\begin{bmatrix}
+\bm{L}_{n11} & \bm{0}_{n11} & \bm{0}_{n11} & \bm{0}_{n11}  & \cdots & \bm{x}_{n11} & \bm{0}_{n11} & \bm{0}_{n11} & \bm{0}_{n11} & \cdots          \\
+\bm{0}_{n12} & \bm{L}_{n12} & \bm{0}_{n11} & \bm{0}_{n12}  &  \cdots & \bm{0}_{n12} & \bm{x}_{n12} & \bm{0}_{n11} & \bm{0}_{n11} & \cdots          \\
+\bm{0}_{n21} & \bm{0}_{n21} & \bm{L}_{n21} & \bm{0}_{n21}  & \cdots & \bm{0}_{n21}  & \bm{0}_{n11} & \bm{x}_{n21} & \bm{0}_{n11} &  \cdots         \\
+\bm{0}_{n22} & \bm{0}_{n22} & \bm{0}_{n22} & \bm{L}_{n22}  &  \cdots & \bm{0}_{n22} & \bm{0}_{n21} & \bm{0}_{n21} & \bm{x}_{n22} &  \cdots         \\
+\vdots       & \vdots       &  \vdots      &  \vdots       & \vdots  & \vdots       & \vdots       &  \vdots       & \vdots      & \vdots         \\
+\end{bmatrix}.
+$$
+Based on the model (3) in part (g), estimate the common variance-covariance matrix for each sample in a repeat, for example, sample 1 in repeat 1,  which is given by
+$$
+\bm{V}_{n11}=\bm{Z}_{n11} \text{Var}(\bm{\delta}_{n11}) \bm{Z}_{n11}^\top +\text{Var} (\bm{\varepsilon}_{n11}).
+$$
+{\bf Note:} The model form for the sample 1 in repeat 1 is
+$$
+\bm{y}_{n11}=\bm{X}_{n11} \bm{\beta}+\bm{Z}_{n11} \bm{\delta}_{n11}+\bm{\epsilon}_{n11},
+$$
+where 
+$$
+\bm{X}_{n11}=[\bm{L}_{n11} \; \bm{x}_{n11}], \;\;
+\bm{Z}_{n11}=[\bm{L}_{n11} \; \bm{x}_{n11}],
+$$
+$$
+\bm{\beta}=\begin{bmatrix}
+\beta_0 \\
+\beta_1 \\
+\end{bmatrix},
+\;\;
+\bm{\delta}_{n11}=
+\begin{bmatrix}
+\delta_{0,11}\\
+\delta_{1,11} \\
+\end{bmatrix},
+$$
+$$
+\bm{L}_{n11}=\begin{bmatrix}
+1\\
+1 \\
+1 \\
+1 \\
+1\\
+\end{bmatrix},
+\;\;
+\bm{x}_{n11}=\begin{bmatrix}
+0\\
+50 \\
+100\\
+150 \\
+200\\
+\end{bmatrix},
+\;\;
+\bm{y}_{n11}=\begin{bmatrix}
+1\\
+104 \\
+206\\
+307 \\
+409\\
+\end{bmatrix},
+\;\;
+\bm{\varepsilon}_{n11}=\begin{bmatrix}
+\varepsilon_{n11, 1}\\
+\varepsilon_{n11, 2}\\
+\varepsilon_{n11, 3}\\
+\varepsilon_{n11, 4}\\
+\varepsilon_{n11, 5}\\
+\end{bmatrix}.
+$$
+Hence, in the expression of
+$$
+\bm{V}_{n11}=\bm{Z}_{n11} \text{Var}(\bm{\delta}_{n11}) \bm{Z}_{n11}^\top +\text{Var} (\bm{\varepsilon}_{n11}),
+$$
+$$
+\text{Var}(\bm{\delta}_{n11})
+=D_{n11}=\text{Var}
+\left(
+\begin{bmatrix}
+\delta_{0,11}\\
+\delta_{1,11} \\
+\end{bmatrix}
+\right)
+=
+\begin{bmatrix}
+\sigma_{\delta_{0,11}}^2 & \text{Cov}(\delta_{0,11},\delta_{1,11})\\
+\text{Cov}(\delta_{0,11},\delta_{1,11}) &
+\sigma_{\delta_{1, 11}}^2\\
+\end{bmatrix},
+$$
+$$
+\text{Var}(\bm{\varepsilon}_{n11})=
+\text{Var} \left( \begin{bmatrix}
+\varepsilon_{n11, 1}\\
+\varepsilon_{n11, 2}\\
+\varepsilon_{n11, 3}\\
+\varepsilon_{n11, 4}\\
+\varepsilon_{n11, 5}\\
+\end{bmatrix} \right)
+=\text{diag}(\sigma_{\varepsilon}^2, \sigma_{\varepsilon}^2, \sigma_{\varepsilon}^2, \sigma_{\varepsilon}^2, \sigma_{\varepsilon}^2).
+$$
+Once these variance components are estimated, the variance-covariance is obtained easily.
+Provide the values of the estimated variance components and the variance-covariance matrix. 
+\end{itemize}
+
+```{r}
+# estimate of variance components
+rndeff.reml = lme(Absorbance~Sample+Repeat+Volume, data = calib.dat, method="REML", 
+                  random=~1+Repeat|ID)
+summary(rndeff.reml)
+# estimate of variance covariance
+# V = Z VAR Z^T + VAR(eps)
+```
+
+\begin{itemize}
+\item [(i)]  Assuming a random intercept and a random slope model (3) in part (g), use R package \verb|nlme| to fit a linear mixed model, provide the inference about the fixed effects with the REML method and model-based standard errors (since this package cannot produce sandwich robust standard errors). Compare the results with those obtained in parts (c), (d) and (f) with the naive, two-stage and GEE methods respectively.
+\end{itemize}
+
+```{r}
+library(nlme)
+fm1 <- lme(Absorbance~Sample+Repeat+Volume, data = calib.dat, method="REML", 
+                  random=~1+Repeat|ID)
+summary(fm1)
+```
+
+I could say that the estimations and standard errors obtained from these three models are quite different.
+We should know that unlike a random intercept model, a random slope model allows each group line to have a different slope and that means that the random slope model allows the explanatory variable to have a different effect for each group. It allows the relationship between the explanatory variable and the response to be different for each group. I believe this new model allow us to estimate the within variation and also the between variation.
+
+**Note: For the following parts (j) and (k), if you can find an R function or R package to calculate the vector of estimated marginal means and conditional means, you don't need report each component in their expressions, just add two columns in the original data file to report the final results of $\hat{E}(\bm{y})$ and  $\hat{E}(\bm{y}|\bm{\delta})$. If you cannot find such an R function, then follow the expression details to program your own functions to do the calculations, and report the results in the same way.**
+
+\begin{description}
+\item[(j)] Based on the expression for the marginal mean relationship between absorbance and volume given below, using R to compute the vector of estimated marginal means, which is given by 
+$$
+\hat{E}(\bm{y})=\hat{\bm{\mu}}=\bm{X} \bm{b},
+$$
+where $\bm{b}=\hat{\bm{\beta}}=(\bm{X}^\top \hat{\bm{V}}^{-1} \bm{X})^{-1} \bm{X}^\top \hat{\bm{V}}^{-1} \bm{y}$. 
+
+\item[(k)] Based on the expression for the conditional mean relationship between absorbance and volume given below, using R to compute the vector of estimated conditional means, which is given by 
+$$
+\hat{E}(\bm{y}|\bm{\delta})=\hat{\bm{\mu}}|\bm{\delta}
+=\bm{X} \bm{b} + \bm{Z} \hat{\bm{\delta}},
+$$
+where $\bm{b}=\hat{\bm{\beta}}=(\bm{X}^\top \hat{\bm{V}}^{-1} \bm{X})^{-1} \bm{X}^\top \hat{\bm{V}}^{-1} \bm{y}$, 
+$\hat{\bm{\delta}}$ are the predicted values for the random effects, commonly referred to as the BLUP ({\it best linear unbiased predictors}), given by
+$$
+\hat{\bm{\delta}}= \hat{\bm{D}} \bm{Z}^\top \hat{\bm{V}}^{-1} 
+(\bm{y}-\bm{X} \bm{b}),
+$$
+where $\hat{\bm{V}}=\bm{Z} \hat{\bm{D}} \bm{Z}^\top + \hat{\bm{S}}$, 
+$\hat{\bm{D}}$ and $\hat{\bm{S}}$ are the REML estimates of the variance-covariance matrices, which could be obtained from the output of a statistical software. 
+\end{description}
+
+\pagebreak
+
+# Problem 4. \textcolor{red}{[12 marks; (a) 3, (b) 3, (c), 3, (d), 3]}
+
+In a teratology experiment, female rats on iron-deficient diets were assigned to four groups. Group 1 received only placebo injections. The other groups received injections of an iron supplement according to various schedules. The rats were made pregnant and then sacrificed after 3 weeks. For each fetus in each rat's litter, the response was whether the fetus was dead. Data also include HB = mother's hemoglobin level.
+We treat the fetuses in a given litter as a cluster. 
+
+The data have two formats, one is the group data set \verb|teratologyGr.txt|,  and the other is the ungrouped  data set, \verb|teratologyUnGr.txt|, which are available from the D2L under the assignment folder.  You can upload the data by
+
+```{r}
+Grdata<-read.table(file="teratologyGr.txt", header=TRUE)
+head(Grdata)
+UnGrdata<-read.table(file="teratologyUnGr.txt", header=TRUE)
+head(UnGrdata)
+```
+Specifically, the definition of the groups and the names of all the variables are given by
+
+Group 1: placebo; Group 2: iron injections on days 7 and 10; 
+Group 3: iron injections on days 0 and 7; 
+Group 4: iron injections weekly;
+
+In  \verb|teratologyGr.txt|, (N,  R,  HB,  GRP, Litter) represents 
+(Number of fetuses in a litter, Number dead in litter, Mother's hemoglobin level, Group number, Litter number).
+
+In  \verb|teratologyUnGr.txt|, (HB, GRP, Litter,  Response) represents 
+(Mother's hemoglobin level, Group number, Litter number, Response Alive or Dead).
+
+Let $y_i$ denote the number of dead fetuses for the $T_i$ fetuses in litter $i$. Let $\pi_{it}$ denote the probability of death for fetus $t$ in litter $i$. 
+Use the first group as the reference level, let $z_{ig} = 1$ if litter $i$ is in group $g$ and 0 otherwise, $g=2, 3, 4$.   
+
+\begin{description}
+  \item[(a)]
+First, we use the grouped data and ignore the clustering and suppose that $y_i$ is a Binomial$(T_i , \pi_{it} )$ variate. 
+Use $z_{ig}$ as three covariates  only to fit a logistic regression model:
+$$
+\mbox{logit}(\pi_{it})=\alpha+\beta_1 z_{i2}+\beta_2 z_{i3}+\beta_3 z_{i4}.
+$$
+Test the goodness-of-fit using statistics $X^2$ and deviance $D$, respectively, and provide your conclusion for the model fit, does it fit data well or not?
+\end{description}
+
+```{r}
+Grdata$GRP = factor(Grdata$GRP)
+model = glm(cbind(R,N-R)~GRP, family = binomial(link = "logit"), data = Grdata)
+summary(model)
+```
+
+```{r}
+# GOF
+s.p.r.s = sum(resid(model_reduced, "pearson")^2)  #SUM OF PEARSON RESIDUAL SQUARED
+s.d.r.s = sum(resid(model_reduced, "deviance")^2) #SUM OF DEVIANCE RESIDUAL SQUARED
+1-pchisq(s.p.r.s, df.residual(model))
+1-pchisq(s.d.r.s, df.residual(model))
+```
+
+We do not reject the null hypothesis, which means the model fits the data well.
+
+\begin{description}
+  \item[(b)]
+There maybe inter-litter variability that cannot be accounted for in a binomial model by treatment group alone, because fetuses are more alike within litters than across litters, even within the same treatment group. This can result in overdispersion and make standard errors invalid (too small). 
+Two possible solutions are: GEE and GLIMM to model the dependence within litters.  To use GEE [by gee() in  library(gee)], need data in ungrouped (binary) format. 
+So use the data \verb|teratologyUnGr.txt| and exchangeable structure as a working correlation matrix, obtain the estimated effects of each treatment group related to the Placebo (Group 1) and the correlation coefficient in the working correlation matrix.
+\end{description}
+
+```{r}
+library(gee)
+UnGrdata$GRP = as.factor(UnGrdata$GRP)
+UnGrdata$Response = as.factor(UnGrdata$Response)
+UnGrdata$ID =  seq.int(nrow(UnGrdata))
+gee.model = gee((Response=="Dead")~GRP, id = Litter, data = UnGrdata, corstr = "exchangeable", 
+                family = binomial(link = "logit"))
+summary(gee.model)
+```
+
+\begin{description}
+\item[(c)]
+Use GLIMM to model the dependence within litters,
+$$
+\mbox{logit}(\pi_{it})=\alpha+u_i+\beta_1 z_{i2}+\beta_2 z_{i3}+\beta_3 z_{i4},
+$$
+where $\pi_{it}=P$(fetus $t$ in litter $i$ dead).  Assume $u_i \sim N(0, \sigma^2)$, $\sigma^2$ is unknown. 
+To use GLIMM [by glmer() in  library(lme4)], data can be in either grouped format or  ungrouped (binary) format.  So use the data \verb|teratologyGr.txt| to obtain the estimated effects of treatment group,  including $\sigma^2$. (Use  mode-based standard errors of fixed effects for inference).
+\end{description}
+
+```{r, warning=FALSE}
+library(lme4)
+glimm = glmer((Response=="Dead")~GRP+(1|Litter), family = binomial, data = UnGrdata)
+summary(glimm)
+```
+
+\begin{description}
+\item[(d)] Put your estimates of the regression coefficients and their standard errors in the following table, and compare the three approaches shown in parts 
+(a), (b) and (c) and comment on the validity of these different methods. [For GEE, use sandwich robust standard errors; for ML and GLIMM, use model-based standard errors].
+
+\begin{center}
+\begin{tabular}{cccccccccc}  
+   &  &   \multicolumn{2}{c}{Binomial ML} &  & \multicolumn{2}{c}{GEE}  & & \multicolumn{2}{c}{GLMM} \\ \cline{3-4}   \cline{6-7}   \cline{9-10} 
+   &  &   Estimate & (M-based) SE &  &  Estimate & (Robust) SE & &  Estimate & (M-based) SE  \\ \hline
+ (Intercept)  & & 1.144& 0.129& & 1.21& 0.270& &1.809& 0.362 \\       \hline
+  GRP2  & & -3.323& 0.331& & -3.37& 0.430& &-4.540& 0.735 \\             \hline
+  GRP3  & & -4.476& 0.731& & -4.58& 0.624& &-5.883& 1.175 \\              \hline
+  GRP4  & & -4.130& 0.476& & -4.25& 0.605& &-5.606& 0.908 \\             \hline
+\end{tabular}
+\end{center} 
+
+I could say that the estimations and standard errors obtained from these three models are quite similar. It is important to take into account the correlation between repeated measures and the robustness of the results regarless of how the correlation is modelled. We should know that Binomial ML model ignores some randomness, which can lead to underestimation of effect size and underestimation of the overall variation. The GEE analysis, assuming equal correlation (exchangeable correlation), but it is not very plausible. GLIMM model is a GLM with both fixed and random effects. So, I would say GLIMM is the best model that captures random effect and also it does not require the assumption as GEE.
+
+\end{description}
