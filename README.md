@@ -11,3 +11,12 @@
 ### https://blog.csdn.net/weixin_44933530/article/details/125993172
 
 ## main branch: some R code (some of the school files and assignments)
+
+### stat 601: Bayesian Infectious Disease Modelling
+
+### stat 625: Multivariate Analysis
+
+### stat 635: Generalized Linear Model
+
+### stat 633: Survival Analysis
+
